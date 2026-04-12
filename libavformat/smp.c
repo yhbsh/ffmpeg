@@ -102,8 +102,10 @@ static int smp_open(URLContext *h, const char *uri, int flags, AVDictionary **op
 
     if (strcmp(proto, "smp"))
         return AVERROR(EINVAL);
-    if (port <= 0 || port >= 65536) {
-        av_log(h, AV_LOG_ERROR, "Port missing in uri\n");
+    if (port <= 0)
+        port = 7777;
+    if (port >= 65536) {
+        av_log(h, AV_LOG_ERROR, "Invalid port in uri\n");
         return AVERROR(EINVAL);
     }
 
