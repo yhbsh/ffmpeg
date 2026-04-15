@@ -156,6 +156,12 @@ static int smp_read_header(AVFormatContext *s)
         }
     }
 
+    /* SMP header carries full codec params — skip expensive probing and
+     * disable avio-level buffering for lowest time-to-first-frame. */
+    s->max_analyze_duration = 0;
+    s->probesize            = 32;
+    s->flags               |= AVFMT_FLAG_NOBUFFER;
+
     ret = 0;
 end:
     av_free(msg);
@@ -231,7 +237,7 @@ static int smp_read_packet(AVFormatContext *s, AVPacket *pkt)
 const FFInputFormat ff_smp_demuxer = {
     .p.name      = "smp",
     .p.long_name = NULL_IF_CONFIG_SMALL("Simple Media Protocol"),
-    .p.flags     = AVFMT_NOTIMESTAMPS | AVFMT_TS_DISCONT,
+    .p.flags     = AVFMT_TS_DISCONT,
     .read_probe  = smp_probe,
     .read_header = smp_read_header,
     .read_packet = smp_read_packet,
