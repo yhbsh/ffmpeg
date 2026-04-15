@@ -124,6 +124,7 @@ static int smp_open(URLContext *h, const char *uri, int flags, AVDictionary **op
 
     if (s->rw_timeout >= 0)
         av_dict_set_int(options, "timeout", s->rw_timeout, 0);
+    av_dict_set(options, "tcp_nodelay", "1", 0);
 
     ret = ffurl_open_whitelist(&s->tcp_hd, buf, AVIO_FLAG_READ_WRITE,
                                &h->interrupt_callback, options,
