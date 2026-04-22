@@ -198,8 +198,10 @@ static int ff_srt_url_parse(URLContext *h, const char *uri,
     av_url_split(proto, sizeof proto, NULL, 0, host, (int)hlen,
                  port, path, sizeof path, uri);
     if (strcmp(proto, "srt") != 0) return AVERROR(EINVAL);
-    if (*port <= 0 || *port >= 65536) {
-        av_log(h, AV_LOG_ERROR, "srt: missing or invalid port in uri '%s'\n", uri);
+    if (*port <= 0)
+        *port = 9999;
+    if (*port >= 65536) {
+        av_log(h, AV_LOG_ERROR, "srt: invalid port in uri '%s'\n", uri);
         return AVERROR(EINVAL);
     }
     return 0;
