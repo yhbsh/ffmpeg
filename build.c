@@ -34,6 +34,7 @@ struct target {
     const char *name;
     const char *cc;
     const char *ar;
+    const char *ranlib;         /* host ranlib on darwin, llvm-ranlib on NDK */
     const char *strip;
     const char *extra_cflags;   /* appended to COMMON_CFLAGS */
     const char *extra_ldflags;  /* appended to link commands */
@@ -41,6 +42,8 @@ struct target {
     const char *sys_libs;       /* -lfoo for system libs */
     bool build_ffplay;          /* SDL-dependent */
     bool build_objc;            /* .m files (AVFoundation) */
+    bool is_darwin;             /* macOS/iOS: compile VideoToolbox etc */
+    bool is_android;            /* Android: compile MediaCodec, android_camera */
 };
 
 /* Paths you may need to adjust for your machine. */
@@ -54,6 +57,7 @@ static const struct target targets[] = {
         .name = "macos-arm64",
         .cc = "clang",
         .ar = "ar",
+        .ranlib = "ranlib -D",
         .strip = "strip",
         .extra_cflags =
             " -I" OPENSSL_MACOS "/include"
@@ -70,6 +74,7 @@ static const struct target targets[] = {
         .sys_libs = " -lssl -lcrypto -lm -lz -lbz2 -liconv -lpthread",
         .build_ffplay = true,
         .build_objc = true,
+        .is_darwin = true,
     },
     {
         /* Android arm64. Needs target-specific HAVE_* and ARCH_* values in
@@ -79,6 +84,7 @@ static const struct target targets[] = {
         .name = "android-arm64",
         .cc = ANDROID_NDK "/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android" ANDROID_API "-clang",
         .ar = ANDROID_NDK "/toolchains/llvm/prebuilt/darwin-x86_64/bin/llvm-ar",
+        .ranlib = ANDROID_NDK "/toolchains/llvm/prebuilt/darwin-x86_64/bin/llvm-ranlib",
         .strip = ANDROID_NDK "/toolchains/llvm/prebuilt/darwin-x86_64/bin/llvm-strip",
         .extra_cflags =
             " -I" OPENSSL_ANDROID "/include"
@@ -86,11 +92,11 @@ static const struct target targets[] = {
         .extra_ldflags =
             " -L" OPENSSL_ANDROID "/lib",
         .frameworks = "",
-        .sys_libs =
-            " -lssl -lcrypto -lm -lz -llog -landroid"
-            " -lcamera2ndk -lmediandk",
+        /* -lcamera2ndk + -lmediandk need Android API >= 24; omit by default. */
+        .sys_libs = " -lssl -lcrypto -lm -lz -llog -landroid",
         .build_ffplay = false,
         .build_objc = false,
+        .is_android = true,
     },
     {
         /* iOS arm64. Needs iPhoneOS SDK (via xcrun) and openssl built for iOS.
@@ -100,6 +106,7 @@ static const struct target targets[] = {
         .name = "ios-arm64",
         .cc = "xcrun --sdk iphoneos clang",
         .ar = "xcrun --sdk iphoneos ar",
+        .ranlib = "xcrun --sdk iphoneos ranlib -D",
         .strip = "xcrun --sdk iphoneos strip",
         .extra_cflags =
             " -arch arm64"
@@ -114,9 +121,31 @@ static const struct target targets[] = {
         .sys_libs = " -lssl -lcrypto -lm -lz -lbz2 -liconv -lpthread",
         .build_ffplay = false,
         .build_objc = true,
+        .is_darwin = true,
     },
     { .name = NULL }
 };
+
+/* Source files to skip on platforms where they don't apply. */
+static bool skip_source(const char *src, const struct target *t) {
+    /* VideoToolbox / AudioToolbox / AVFoundation are macOS/iOS only */
+    if (!t->is_darwin) {
+        if (strstr(src, "videotoolbox") ||
+            strstr(src, "hwcontext_videotoolbox") ||
+            strstr(src, "avfoundation") ||
+            strstr(src, "audiotoolbox") ||
+            strstr(src, "dispatch_semaphore"))
+            return true;
+    }
+    /* MediaCodec + android_camera + hwcontext_mediacodec only on Android */
+    if (!t->is_android) {
+        if (strstr(src, "mediacodec") ||
+            strstr(src, "android_camera") ||
+            strstr(src, "ohcodec"))
+            return true;
+    }
+    return false;
+}
 
 static const char *COMMON_CFLAGS =
     " -I. -I./"
@@ -418,13 +447,19 @@ static void emit_job(const char *src, const char *lib, const struct target *t,
 static void queue_lib(const char *lib,
                      const char **c_srcs, const char **m_srcs, const char **s_srcs,
                      const struct target *t, const char *cflags) {
-    for (int i = 0; c_srcs && c_srcs[i]; i++)
+    for (int i = 0; c_srcs && c_srcs[i]; i++) {
+        if (skip_source(c_srcs[i], t)) continue;
         emit_job(c_srcs[i], lib, t, cflags);
+    }
     if (t->build_objc)
-        for (int i = 0; m_srcs && m_srcs[i]; i++)
+        for (int i = 0; m_srcs && m_srcs[i]; i++) {
+            if (skip_source(m_srcs[i], t)) continue;
             emit_job(m_srcs[i], lib, t, cflags);
-    for (int i = 0; s_srcs && s_srcs[i]; i++)
+        }
+    for (int i = 0; s_srcs && s_srcs[i]; i++) {
+        if (skip_source(s_srcs[i], t)) continue;
         emit_job(s_srcs[i], lib, t, cflags);
+    }
 }
 
 static void archive_lib(const struct target *t, const char *lib) {
@@ -445,6 +480,7 @@ static void archive_lib(const struct target *t, const char *lib) {
 #define ADD_LIB(L) \
     if (strcmp(lib, #L) == 0) { \
         for (int i = 0; L ## _c_srcs[i]; i++) { \
+            if (skip_source(L ## _c_srcs[i], t)) continue; \
             char o[1024]; obj_path(o, sizeof o, L ## _c_srcs[i]); \
             n += snprintf(cmd+n, sizeof cmd - n, " %s", o); \
         } \
@@ -453,6 +489,7 @@ static void archive_lib(const struct target *t, const char *lib) {
 #define ADD_LIB_M(L) \
     if (strcmp(lib, #L) == 0 && t->build_objc) { \
         for (int i = 0; L ## _m_srcs[i]; i++) { \
+            if (skip_source(L ## _m_srcs[i], t)) continue; \
             char o[1024]; obj_path(o, sizeof o, L ## _m_srcs[i]); \
             n += snprintf(cmd+n, sizeof cmd - n, " %s", o); \
         } \
@@ -461,6 +498,7 @@ static void archive_lib(const struct target *t, const char *lib) {
 #define ADD_LIB_S(L) \
     if (strcmp(lib, #L) == 0) { \
         for (int i = 0; L ## _S_srcs[i]; i++) { \
+            if (skip_source(L ## _S_srcs[i], t)) continue; \
             char o[1024]; obj_path(o, sizeof o, L ## _S_srcs[i]); \
             n += snprintf(cmd+n, sizeof cmd - n, " %s", o); \
         } \
@@ -479,20 +517,34 @@ static void archive_lib(const struct target *t, const char *lib) {
     fprintf(stderr, "AR    %s\n", arfile);
     if (run(cmd) != 0) die("ar failed");
 
-    char ranlib[512];
-    snprintf(ranlib, sizeof ranlib, "ranlib -D %s", arfile);
-    run(ranlib);
+    char ranlib_cmd[512];
+    snprintf(ranlib_cmd, sizeof ranlib_cmd, "%s %s", t->ranlib, arfile);
+    run(ranlib_cmd);
 }
 
 /* ----- linking ----- */
 
 static void link_binary(const struct target *t, const char *outname,
                         const char **objs, bool with_sdl) {
+    /* On Android, compile stdio_shim.c (fixes stderr/stdin from older
+     * openssl builds). */
+    if (t->is_android) {
+        if (!file_exists("compat/android/stdio_shim.o")) {
+            char cc[1024];
+            snprintf(cc, sizeof cc,
+                "%s -fPIC -O2 -c -o compat/android/stdio_shim.o "
+                "compat/android/stdio_shim.c", t->cc);
+            if (run(cc) != 0) die("stdio_shim build failed");
+        }
+    }
+
     char cmd[64 * 1024];
     int n = snprintf(cmd, sizeof cmd,
         "%s -Llibavcodec -Llibavdevice -Llibavfilter -Llibavformat"
         " -Llibavutil -Llibswscale -Llibswresample%s -o %s_g",
         t->cc, t->extra_ldflags ? t->extra_ldflags : "", outname);
+    if (t->is_android)
+        n += snprintf(cmd+n, sizeof cmd - n, " compat/android/stdio_shim.o");
 
     /* Shared fftools helpers always linked */
     for (int i = 0; FFTOOLS_SHARED_OBJS[i]; i++)
@@ -554,6 +606,42 @@ static void gen_resources(void) {
 }
 
 /* ----- orchestration ----- */
+
+/* Copy a per-target header into its canonical location. */
+static void install_header(const char *dst, const char *src_template, const char *tname) {
+    char src[256];
+    snprintf(src, sizeof src, src_template, tname);
+    if (!file_exists(src))
+        die("missing %s (hand-maintained per-target header)", src);
+
+    /* Skip if identical */
+    FILE *a = fopen(src, "rb");
+    FILE *b = fopen(dst, "rb");
+    bool same = false;
+    if (a && b) {
+        same = true;
+        int ca, cb;
+        while ((ca = fgetc(a)) == (cb = fgetc(b)) && ca != EOF) {}
+        if (ca != EOF || cb != EOF) same = false;
+    }
+    if (a) fclose(a);
+    if (b) fclose(b);
+    if (same) return;
+
+    char cmd[512];
+    snprintf(cmd, sizeof cmd, "cp %s %s", src, dst);
+    fprintf(stderr, "GEN   %s (from %s)\n", dst, src);
+    if (run(cmd) != 0) die("install %s failed", dst);
+}
+
+static void install_config_for(const struct target *t) {
+    install_header("config.h",             "config-%s.h",             t->name);
+    install_header("config_components.h",  "config_components-%s.h",  t->name);
+    install_header("libavdevice/indev_list.c",
+                   "libavdevice/indev_list-%s.c",  t->name);
+    install_header("libavdevice/outdev_list.c",
+                   "libavdevice/outdev_list-%s.c", t->name);
+}
 
 static void usage(void) {
     fprintf(stderr, "usage: build [-v] [-j N] [target|clean]\n");
@@ -636,6 +724,9 @@ int main(int argc, char **argv) {
     if (!t) die("unknown target: %s", tname);
 
     fprintf(stderr, "build: target=%s jobs=%d\n", t->name, jobs_n);
+
+    /* 0. Install target-specific config.h */
+    install_config_for(t);
 
     /* 1. Generate resources (html/css → C arrays) */
     gen_resources();
