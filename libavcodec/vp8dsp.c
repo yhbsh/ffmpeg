@@ -202,23 +202,10 @@ static av_always_inline void filter_common(uint8_t *p, ptrdiff_t stride,
     }
 }
 
-static av_always_inline void vp7_filter_common(uint8_t *p, ptrdiff_t stride,
-                                               int is4tap)
-{
-    filter_common(p, stride, is4tap, IS_VP7);
-}
-
 static av_always_inline void vp8_filter_common(uint8_t *p, ptrdiff_t stride,
                                                int is4tap)
 {
     filter_common(p, stride, is4tap, IS_VP8);
-}
-
-static av_always_inline int vp7_simple_limit(uint8_t *p, ptrdiff_t stride,
-                                             int flim)
-{
-    LOAD_PIXELS
-    return FFABS(p0 - q0) <= flim;
 }
 
 static av_always_inline int vp8_simple_limit(uint8_t *p, ptrdiff_t stride,
@@ -244,7 +231,6 @@ static av_always_inline int vp ## vpn ## _normal_limit(uint8_t *p,            \
            FFABS(q2 - q1) <= I && FFABS(q1 - q0) <= I;                        \
 }
 
-NORMAL_LIMIT(7)
 NORMAL_LIMIT(8)
 
 // high edge variance
