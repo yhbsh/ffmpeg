@@ -584,7 +584,6 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
             ff_msmpeg4_decode_ext_header(h, buf_size) < 0)
             h->c.er.error_status_table[h->c.mb_num - 1] = ER_MB_ERROR;
 
-frame_end:
     if (!h->c.studio_profile)
         ff_er_frame_end(&h->c.er, NULL);
 

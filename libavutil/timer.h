@@ -101,17 +101,7 @@
         }                                                                 \
     }
 
-#if CONFIG_MACOS_KPERF
-
-#define START_TIMER                                                         \
-    uint64_t tperf;                                                         \
-    ff_kperf_init();                                                        \
-    tperf = ff_kperf_cycles();
-
-#define STOP_TIMER(id)                                                      \
-    TIMER_REPORT(id, ff_kperf_cycles() - tperf);
-
-#elif defined(AV_READ_TIME)
+#if defined(AV_READ_TIME)
 #define START_TIMER                             \
     uint64_t tend;                              \
     uint64_t tstart = AV_READ_TIME();           \

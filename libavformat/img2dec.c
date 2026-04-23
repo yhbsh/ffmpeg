@@ -791,31 +791,10 @@ static int webp_probe(const AVProbeData *p)
     return 0;
 }
 
-static int pnm_magic_check(const AVProbeData *p, int magic)
-{
-    const uint8_t *b = p->buf;
-
-    return b[0] == 'P' && b[1] == magic + '0';
-}
-
-static inline int pnm_probe(const AVProbeData *p)
-{
-    const uint8_t *b = p->buf;
-
-    while (b[2] == '\r')
-        b++;
-    if (b[2] == '\n' && (b[3] == '#' || (b[3] >= '0' && b[3] <= '9')))
-        return AVPROBE_SCORE_EXTENSION + 2;
-    return 0;
-}
 
 
 
 
-static inline int pgmx_probe(const AVProbeData *p)
-{
-    return pnm_magic_check(p, 2) || pnm_magic_check(p, 5) ? pnm_probe(p) : 0;
-}
 
 
 

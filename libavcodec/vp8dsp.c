@@ -52,100 +52,6 @@ static void name ## _idct_dc_add4y_c(uint8_t *dst, int16_t block[4][16],      \
     name ## _idct_dc_add_c(dst + 12, block[3], stride);                       \
 }
 
-#if CONFIG_VP7_DECODER
-static void vp7_luma_dc_wht_c(int16_t block[4][4][16], int16_t dc[16])
-{
-    int i;
-    unsigned a1, b1, c1, d1;
-    int16_t tmp[16];
-
-    for (i = 0; i < 4; i++) {
-        a1 = (dc[i * 4 + 0] + dc[i * 4 + 2]) * 23170;
-        b1 = (dc[i * 4 + 0] - dc[i * 4 + 2]) * 23170;
-        c1 = dc[i * 4 + 1] * 12540 - dc[i * 4 + 3] * 30274;
-        d1 = dc[i * 4 + 1] * 30274 + dc[i * 4 + 3] * 12540;
-        tmp[i * 4 + 0] = (int)(a1 + d1) >> 14;
-        tmp[i * 4 + 3] = (int)(a1 - d1) >> 14;
-        tmp[i * 4 + 1] = (int)(b1 + c1) >> 14;
-        tmp[i * 4 + 2] = (int)(b1 - c1) >> 14;
-    }
-
-    for (i = 0; i < 4; i++) {
-        a1 = (tmp[i + 0] + tmp[i + 8]) * 23170;
-        b1 = (tmp[i + 0] - tmp[i + 8]) * 23170;
-        c1 = tmp[i + 4] * 12540 - tmp[i + 12] * 30274;
-        d1 = tmp[i + 4] * 30274 + tmp[i + 12] * 12540;
-        AV_ZERO64(dc + i * 4);
-        block[0][i][0] = (int)(a1 + d1 + 0x20000) >> 18;
-        block[3][i][0] = (int)(a1 - d1 + 0x20000) >> 18;
-        block[1][i][0] = (int)(b1 + c1 + 0x20000) >> 18;
-        block[2][i][0] = (int)(b1 - c1 + 0x20000) >> 18;
-    }
-}
-
-static void vp7_luma_dc_wht_dc_c(int16_t block[4][4][16], int16_t dc[16])
-{
-    int i, val = (23170 * (23170 * dc[0] >> 14) + 0x20000) >> 18;
-    dc[0] = 0;
-
-    for (i = 0; i < 4; i++) {
-        block[i][0][0] = val;
-        block[i][1][0] = val;
-        block[i][2][0] = val;
-        block[i][3][0] = val;
-    }
-}
-
-static void vp7_idct_add_c(uint8_t *dst, int16_t block[16], ptrdiff_t stride)
-{
-    int i;
-    unsigned a1, b1, c1, d1;
-    int16_t tmp[16];
-
-    for (i = 0; i < 4; i++) {
-        a1 = (block[i * 4 + 0] + block[i * 4 + 2]) * 23170;
-        b1 = (block[i * 4 + 0] - block[i * 4 + 2]) * 23170;
-        c1 = block[i * 4 + 1] * 12540 - block[i * 4 + 3] * 30274;
-        d1 = block[i * 4 + 1] * 30274 + block[i * 4 + 3] * 12540;
-        AV_ZERO64(block + i * 4);
-        tmp[i * 4 + 0] = (int)(a1 + d1) >> 14;
-        tmp[i * 4 + 3] = (int)(a1 - d1) >> 14;
-        tmp[i * 4 + 1] = (int)(b1 + c1) >> 14;
-        tmp[i * 4 + 2] = (int)(b1 - c1) >> 14;
-    }
-
-    for (i = 0; i < 4; i++) {
-        a1 = (tmp[i + 0] + tmp[i + 8]) * 23170;
-        b1 = (tmp[i + 0] - tmp[i + 8]) * 23170;
-        c1 = tmp[i + 4] * 12540 - tmp[i + 12] * 30274;
-        d1 = tmp[i + 4] * 30274 + tmp[i + 12] * 12540;
-        dst[0 * stride + i] = av_clip_uint8(dst[0 * stride + i] +
-                                            ((int)(a1 + d1 + 0x20000) >> 18));
-        dst[3 * stride + i] = av_clip_uint8(dst[3 * stride + i] +
-                                            ((int)(a1 - d1 + 0x20000) >> 18));
-        dst[1 * stride + i] = av_clip_uint8(dst[1 * stride + i] +
-                                            ((int)(b1 + c1 + 0x20000) >> 18));
-        dst[2 * stride + i] = av_clip_uint8(dst[2 * stride + i] +
-                                            ((int)(b1 - c1 + 0x20000) >> 18));
-    }
-}
-
-static void vp7_idct_dc_add_c(uint8_t *dst, int16_t block[16], ptrdiff_t stride)
-{
-    int i, dc = (23170 * (23170 * block[0] >> 14) + 0x20000) >> 18;
-    block[0] = 0;
-
-    for (i = 0; i < 4; i++) {
-        dst[0] = av_clip_uint8(dst[0] + dc);
-        dst[1] = av_clip_uint8(dst[1] + dc);
-        dst[2] = av_clip_uint8(dst[2] + dc);
-        dst[3] = av_clip_uint8(dst[3] + dc);
-        dst   += stride;
-    }
-}
-
-MK_IDCT_DC_ADD4_C(vp7)
-#endif /* CONFIG_VP7_DECODER */
 
 // TODO: Maybe add dequant
 #if CONFIG_VP8_DECODER
@@ -687,36 +593,6 @@ av_cold void ff_vp78dsp_init(VP8DSPContext *dsp)
 #endif
 }
 
-#if CONFIG_VP7_DECODER
-LOOP_FILTERS(vp7)
-
-av_cold void ff_vp7dsp_init(VP8DSPContext *dsp)
-{
-    dsp->vp8_luma_dc_wht    = vp7_luma_dc_wht_c;
-    dsp->vp8_luma_dc_wht_dc = vp7_luma_dc_wht_dc_c;
-    dsp->vp8_idct_add       = vp7_idct_add_c;
-    dsp->vp8_idct_dc_add    = vp7_idct_dc_add_c;
-    dsp->vp8_idct_dc_add4y  = vp7_idct_dc_add4y_c;
-    dsp->vp8_idct_dc_add4uv = vp7_idct_dc_add4uv_c;
-
-    dsp->vp8_v_loop_filter16y = vp7_v_loop_filter16_c;
-    dsp->vp8_h_loop_filter16y = vp7_h_loop_filter16_c;
-    dsp->vp8_v_loop_filter8uv = vp7_v_loop_filter8uv_c;
-    dsp->vp8_h_loop_filter8uv = vp7_h_loop_filter8uv_c;
-
-    dsp->vp8_v_loop_filter16y_inner = vp7_v_loop_filter16_inner_c;
-    dsp->vp8_h_loop_filter16y_inner = vp7_h_loop_filter16_inner_c;
-    dsp->vp8_v_loop_filter8uv_inner = vp7_v_loop_filter8uv_inner_c;
-    dsp->vp8_h_loop_filter8uv_inner = vp7_h_loop_filter8uv_inner_c;
-
-    dsp->vp8_v_loop_filter_simple = vp7_v_loop_filter_simple_c;
-    dsp->vp8_h_loop_filter_simple = vp7_h_loop_filter_simple_c;
-
-#if ARCH_RISCV
-    ff_vp7dsp_init_riscv(dsp);
-#endif
-}
-#endif /* CONFIG_VP7_DECODER */
 
 #if CONFIG_VP8_DECODER
 LOOP_FILTERS(vp8)

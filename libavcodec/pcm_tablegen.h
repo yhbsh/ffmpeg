@@ -125,12 +125,5 @@ static void pcm_ulaw_tableinit(void)
 }
 #endif
 
-#if CONFIG_PCM_VIDC_ENCODER
-static uint8_t linear_to_vidc[16384];
-static void pcm_vidc_tableinit(void)
-{
-    build_xlaw_table(linear_to_vidc, vidc2linear, 0xff);
-}
-#endif
 
 #endif /* AVCODEC_PCM_TABLEGEN_H */

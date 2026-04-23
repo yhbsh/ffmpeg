@@ -31,11 +31,7 @@
 #include "libavutil/x86/crc.h"
 #endif
 
-#if CONFIG_SMALL
-#define CRC_TABLE_SIZE 257
-#else
 #define CRC_TABLE_SIZE 1024
-#endif
 static AVCRC av_crc_table[AV_CRC_MAX][CRC_TABLE_SIZE];
 
 #define DECLARE_CRC_INIT_TABLE_ONCE(id, le, bits, poly)                                       \
