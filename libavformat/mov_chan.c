@@ -335,7 +335,6 @@ static const struct {
     const enum MovChannelLayoutTag *layouts;
 } mov_codec_ch_layouts[] = {
     { AV_CODEC_ID_AAC,     mov_ch_layouts_aac      },
-    { AV_CODEC_ID_AC3,     mov_ch_layouts_ac3      },
     { AV_CODEC_ID_ALAC,    mov_ch_layouts_alac     },
     { AV_CODEC_ID_PCM_U8,    mov_ch_layouts_wav    },
     { AV_CODEC_ID_PCM_S8,    mov_ch_layouts_wav    },
