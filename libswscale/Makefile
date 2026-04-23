@@ -42,7 +42,6 @@ endif
 SHLIBOBJS                    += log2_tab.o half2float.o
 
 # Windows resource file
-SHLIBOBJS-$(HAVE_GNU_WINDRES) += swscaleres.o
 
 TESTPROGS = colorspace                                                  \
             floatimg_cmp                                                \

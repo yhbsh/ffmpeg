@@ -207,7 +207,6 @@ STLIBOBJS-$(CONFIG_PHM_ENCODER)         += float2half.o
 STLIBOBJS-$(CONFIG_SWSCALE)             += half2float.o
 
 # Windows resource file
-SHLIBOBJS-$(HAVE_GNU_WINDRES)           += avutilres.o
 
 SKIPHEADERS                            += objc.h
 SKIPHEADERS-$(CONFIG_ZLIB)             += zlib_utils.h

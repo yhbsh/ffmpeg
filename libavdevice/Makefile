@@ -19,4 +19,3 @@ OBJS-$(CONFIG_AVFOUNDATION_INDEV)        += avfoundation.o
 OBJS-$(CONFIG_LAVFI_INDEV)               += lavfi.o
 
 # Windows resource file
-SHLIBOBJS-$(HAVE_GNU_WINDRES)            += avdeviceres.o
