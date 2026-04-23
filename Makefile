@@ -18,8 +18,7 @@ vpath %.ptx  $(SRC_PATH)
 vpath %.metal $(SRC_PATH)
 vpath %/fate_config.sh.template $(SRC_PATH)
 
-TESTTOOLS   = audiogen videogen rotozoom tiny_psnr tiny_ssim base64 audiomatch
-HOSTPROGS  := $(TESTTOOLS:%=tests/%) doc/print_options
+HOSTPROGS  :=
 
 ALLFFLIBS =            \
     avcodec            \
@@ -40,7 +39,7 @@ FFLIBS-$(CONFIG_SWSCALE)    += swscale
 
 FFLIBS := avutil
 
-DATA_FILES := $(wildcard $(SRC_PATH)/presets/*.ffpreset) $(SRC_PATH)/doc/ffprobe.xsd
+DATA_FILES :=
 
 SKIPHEADERS = compat/w32pthreads.h
 
@@ -132,8 +131,6 @@ endef
 $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
 
 include $(SRC_PATH)/fftools/Makefile
-include $(SRC_PATH)/doc/Makefile
-include $(SRC_PATH)/doc/examples/Makefile
 
 $(ALLFFLIBS:%=lib%/version.o): libavutil/ffversion.h
 
@@ -197,15 +194,11 @@ distclean:: clean
 ifeq ($(SRC_LINK),src)
 	$(RM) src
 endif
-	$(RM) -rf doc/examples/pc-uninstalled
 
 config:
 	$(SRC_PATH)/configure $(value FFMPEG_CONFIGURATION)
 
-build: all alltools examples testprogs
-check: all alltools examples testprogs fate
-
-include $(SRC_PATH)/tests/Makefile
+build: all alltools
 
 $(sort $(OUTDIRS)):
 	$(Q)mkdir -p $@

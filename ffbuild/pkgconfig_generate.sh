@@ -43,10 +43,10 @@ Libs.private: $($shared && echo $libs)
 Cflags: -I\${includedir}
 EOF
 
-mkdir -p doc/examples/pc-uninstalled
+mkdir -p ffbuild/pc-uninstalled
 includedir=${source_path}
 [ "$includedir" = . ] && includedir="\${pcfiledir}/../../.."
-    cat <<EOF > doc/examples/pc-uninstalled/${name}-uninstalled.pc
+    cat <<EOF > ffbuild/pc-uninstalled/${name}-uninstalled.pc
 prefix=
 exec_prefix=
 libdir=\${pcfiledir}/../../../$name
