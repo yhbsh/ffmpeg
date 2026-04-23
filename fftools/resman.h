@@ -27,7 +27,7 @@
 #include "fftools/ffmpeg.h"
 #include "libavutil/avutil.h"
 #include "libavutil/bprint.h"
-#include "fftools/textformat/avtextformat.h"
+#include "avtextformat.h"
 
 typedef enum {
     FF_RESOURCE_GRAPH_CSS,

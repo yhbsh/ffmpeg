@@ -64,7 +64,7 @@
 #include "libswresample/swresample.h"
 #include "libswresample/version.h"
 #include "libavfilter/version.h"
-#include "textformat/avtextformat.h"
+#include "avtextformat.h"
 #include "cmdutils.h"
 #include "opt_common.h"
 

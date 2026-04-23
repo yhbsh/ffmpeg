@@ -179,63 +179,13 @@ static const char *SDL_LIBS =
     " -Wl,-weak_framework,QuartzCore -Wl,-weak_framework,CoreHaptics";
 
 static const char *FFTOOLS_SHARED_OBJS[] = {
-    "fftools/cmdutils.o",
-    "fftools/opt_common.o",
+    "fftools/common.o",
     NULL,
 };
 
-static const char *FFMPEG_OBJS[] = {
-    "fftools/ffmpeg.o",
-    "fftools/ffmpeg_dec.o",
-    "fftools/ffmpeg_demux.o",
-    "fftools/ffmpeg_enc.o",
-    "fftools/ffmpeg_filter.o",
-    "fftools/ffmpeg_hw.o",
-    "fftools/ffmpeg_mux.o",
-    "fftools/ffmpeg_mux_init.o",
-    "fftools/ffmpeg_opt.o",
-    "fftools/ffmpeg_sched.o",
-    "fftools/graph/graphprint.o",
-    "fftools/sync_queue.o",
-    "fftools/thread_queue.o",
-    "fftools/textformat/avtextformat.o",
-    "fftools/textformat/tf_compact.o",
-    "fftools/textformat/tf_default.o",
-    "fftools/textformat/tf_flat.o",
-    "fftools/textformat/tf_ini.o",
-    "fftools/textformat/tf_json.o",
-    "fftools/textformat/tf_mermaid.o",
-    "fftools/textformat/tf_xml.o",
-    "fftools/textformat/tw_avio.o",
-    "fftools/textformat/tw_buffer.o",
-    "fftools/textformat/tw_stdout.o",
-    "fftools/resources/resman.o",
-    "fftools/resources/graph.html.o",
-    "fftools/resources/graph.css.o",
-    NULL,
-};
-
-static const char *FFPROBE_OBJS[] = {
-    "fftools/ffprobe.o",
-    "fftools/textformat/avtextformat.o",
-    "fftools/textformat/tf_compact.o",
-    "fftools/textformat/tf_default.o",
-    "fftools/textformat/tf_flat.o",
-    "fftools/textformat/tf_ini.o",
-    "fftools/textformat/tf_json.o",
-    "fftools/textformat/tf_mermaid.o",
-    "fftools/textformat/tf_xml.o",
-    "fftools/textformat/tw_avio.o",
-    "fftools/textformat/tw_buffer.o",
-    "fftools/textformat/tw_stdout.o",
-    NULL,
-};
-
-static const char *FFPLAY_OBJS[] = {
-    "fftools/ffplay.o",
-    "fftools/ffplay_renderer.o",
-    NULL,
-};
+static const char *FFMPEG_OBJS[]  = { "fftools/ffmpeg.o",  NULL };
+static const char *FFPROBE_OBJS[] = { "fftools/ffprobe.o", NULL };
+static const char *FFPLAY_OBJS[]  = { "fftools/ffplay.o",  NULL };
 
 static const char *LIB_ORDER[] = {
     "libavdevice", "libavfilter", "libavformat", "libavcodec",
@@ -619,9 +569,8 @@ static void bin2c(const char *input, const char *output, const char *varname) {
 }
 
 static void gen_resources(void) {
-    mkdir_p("fftools/resources");
-    bin2c("fftools/resources/graph.html", "fftools/resources/graph.html.c", "graph_html");
-    bin2c("fftools/resources/graph.css",  "fftools/resources/graph.css.c",  "graph_css");
+    /* The byte-array forms of graph.html / graph.css are pre-baked into
+     * fftools/common.c. No generation step required. */
 }
 
 /* ----- orchestration ----- */
