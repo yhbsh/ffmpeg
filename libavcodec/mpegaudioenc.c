@@ -733,14 +733,10 @@ static void encode_frame(MpegAudioContext *s, uint8_t *buf, unsigned buf_size,
         }
     }
 
-#if CONFIG_SMALL
-    encode_subbands(s, p, bit_alloc, IS_FIXED(s));
-#else
     if (IS_FIXED(s))
         encode_subbands(s, p, bit_alloc, 1);
     else
         encode_subbands(s, p, bit_alloc, 0);
-#endif
 
     av_assert1(put_bits_left(p) == padding);
 

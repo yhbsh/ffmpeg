@@ -38,10 +38,6 @@ int main(void)
     pcm_ulaw_tableinit();
     WRITE_ARRAY("static const", uint8_t, linear_to_ulaw);
 #endif
-#if CONFIG_PCM_VIDC_ENCODER
-    pcm_vidc_tableinit();
-    WRITE_ARRAY("static const", uint8_t, linear_to_vidc);
-#endif
 
     return 0;
 }

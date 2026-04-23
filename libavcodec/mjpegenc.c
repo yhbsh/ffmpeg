@@ -608,40 +608,6 @@ static av_cold int mjpeg_encode_init(AVCodecContext *avctx)
     return 0;
 }
 
-#if CONFIG_AMV_ENCODER
-// maximum over s->mjpeg_vsample[i]
-#define V_MAX 2
-static int amv_encode_picture(AVCodecContext *avctx, AVPacket *pkt,
-                              const AVFrame *pic_arg, int *got_packet)
-{
-    MPVEncContext *const s = avctx->priv_data;
-    AVFrame *pic;
-    int i, ret;
-    int chroma_v_shift = 1; /* AMV is 420-only */
-
-    if ((avctx->height & 15) && avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Heights which are not a multiple of 16 might fail with some decoders, "
-               "use vstrict=-1 / -strict -1 to use %d anyway.\n", avctx->height);
-        av_log(avctx, AV_LOG_WARNING, "If you have a device that plays AMV videos, please test if videos "
-               "with such heights work with it and report your findings to ffmpeg-devel@ffmpeg.org\n");
-        return AVERROR_EXPERIMENTAL;
-    }
-
-    pic = av_frame_clone(pic_arg);
-    if (!pic)
-        return AVERROR(ENOMEM);
-    //picture should be flipped upside-down
-    for(i=0; i < 3; i++) {
-        int vsample = i ? 2 >> chroma_v_shift : 2;
-        pic->data[i] += pic->linesize[i] * (vsample * s->c.height / V_MAX - 1);
-        pic->linesize[i] *= -1;
-    }
-    ret = ff_mpv_encode_picture(avctx, pkt, pic, got_packet);
-    av_frame_free(&pic);
-    return ret;
-}
-#endif
 
 #define OFFSET(x) offsetof(MJPEGEncContext, mjpeg.x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
@@ -704,27 +670,3 @@ const FFCodec ff_mjpeg_encoder = {
 };
 #endif
 
-#if CONFIG_AMV_ENCODER
-static const AVClass amv_class = {
-    .class_name = "amv encoder",
-    .item_name  = av_default_item_name,
-    .option     = options + AMV_OPTIONS_OFFSET,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-const FFCodec ff_amv_encoder = {
-    .p.name         = "amv",
-    CODEC_LONG_NAME("AMV Video"),
-    .p.type         = AVMEDIA_TYPE_VIDEO,
-    .p.id           = AV_CODEC_ID_AMV,
-    .p.capabilities = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
-    .priv_data_size = sizeof(MJPEGEncContext),
-    .init           = mjpeg_encode_init,
-    FF_CODEC_ENCODE_CB(amv_encode_picture),
-    .close          = mjpeg_encode_close,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
-    CODEC_PIXFMTS(AV_PIX_FMT_YUVJ420P),
-    .color_ranges   = AVCOL_RANGE_JPEG,
-    .p.priv_class   = &amv_class,
-};
-#endif

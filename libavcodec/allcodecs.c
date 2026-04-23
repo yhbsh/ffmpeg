@@ -884,15 +884,7 @@ extern const FFCodec ff_anull_decoder;
 extern const FFCodec ff_anull_encoder;
 
 // The iterate API is not usable with ossfuzz due to the excessive size of binaries created
-#if CONFIG_OSSFUZZ
-const FFCodec * codec_list[] = {
-    NULL,
-    NULL,
-    NULL
-};
-#else
 #include "libavcodec/codec_list.c"
-#endif
 
 static AVOnce av_codec_static_init = AV_ONCE_INIT;
 static void av_codec_init_static(void)

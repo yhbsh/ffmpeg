@@ -44,10 +44,6 @@ static int mp_yuv_to_rgb(int y, int v, int u, int clip_rgb) {
     return 1 << 15;
 }
 
-#if CONFIG_HARDCODED_TABLES
-#define motionpixels_tableinit()
-#include "libavcodec/motionpixels_tables.h"
-#else
 static YuvPixel mp_rgb_yuv_table[1 << 15];
 
 static av_cold void mp_set_zero_yuv(YuvPixel *p)
@@ -86,6 +82,5 @@ static av_cold void motionpixels_tableinit(void)
 {
     mp_build_rgb_yuv_table(mp_rgb_yuv_table);
 }
-#endif /* CONFIG_HARDCODED_TABLES */
 
 #endif /* AVCODEC_MOTIONPIXELS_TABLEGEN_H */

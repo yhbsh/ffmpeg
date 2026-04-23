@@ -21,53 +21,7 @@
 #include "config.h"
 #include "pixelutils.h"
 
-#if CONFIG_PIXELUTILS
-#include <stdlib.h>
-#include <string.h>
-
-#include "attributes.h"
-#include "macros.h"
-
-#include "x86/pixelutils.h"
-
-static av_always_inline int sad_wxh(const uint8_t *src1, ptrdiff_t stride1,
-                                    const uint8_t *src2, ptrdiff_t stride2,
-                                    int w, int h)
-{
-    int x, y, sum = 0;
-
-    for (y = 0; y < h; y++) {
-        for (x = 0; x < w; x++)
-            sum += abs(src1[x] - src2[x]);
-        src1 += stride1;
-        src2 += stride2;
-    }
-    return sum;
-}
-
-#define DECLARE_BLOCK_FUNCTIONS(size)                                               \
-static int block_sad_##size##x##size##_c(const uint8_t *src1, ptrdiff_t stride1,    \
-                                         const uint8_t *src2, ptrdiff_t stride2)    \
-{                                                                                   \
-    return sad_wxh(src1, stride1, src2, stride2, size, size);                       \
-}
-
-DECLARE_BLOCK_FUNCTIONS(2)
-DECLARE_BLOCK_FUNCTIONS(4)
-DECLARE_BLOCK_FUNCTIONS(8)
-DECLARE_BLOCK_FUNCTIONS(16)
-DECLARE_BLOCK_FUNCTIONS(32)
-
-static const av_pixelutils_sad_fn sad_c[] = {
-    block_sad_2x2_c,
-    block_sad_4x4_c,
-    block_sad_8x8_c,
-    block_sad_16x16_c,
-    block_sad_32x32_c,
-};
-#else
 #include "log.h"
-#endif /* CONFIG_PIXELUTILS */
 
 av_pixelutils_sad_fn av_pixelutils_get_sad_fn(int w_bits, int h_bits, int aligned, void *log_ctx)
 {

@@ -789,36 +789,11 @@ static av_cold int mpeg_decode_init(AVCodecContext *avctx)
 }
 
 static const enum AVPixelFormat mpeg1_hwaccel_pixfmt_list_420[] = {
-#if CONFIG_MPEG1_NVDEC_HWACCEL
-    AV_PIX_FMT_CUDA,
-#endif
-#if CONFIG_MPEG1_VDPAU_HWACCEL
-    AV_PIX_FMT_VDPAU,
-#endif
     AV_PIX_FMT_YUV420P,
     AV_PIX_FMT_NONE
 };
 
 static const enum AVPixelFormat mpeg2_hwaccel_pixfmt_list_420[] = {
-#if CONFIG_MPEG2_NVDEC_HWACCEL
-    AV_PIX_FMT_CUDA,
-#endif
-#if CONFIG_MPEG2_VDPAU_HWACCEL
-    AV_PIX_FMT_VDPAU,
-#endif
-#if CONFIG_MPEG2_DXVA2_HWACCEL
-    AV_PIX_FMT_DXVA2_VLD,
-#endif
-#if CONFIG_MPEG2_D3D11VA_HWACCEL
-    AV_PIX_FMT_D3D11VA_VLD,
-    AV_PIX_FMT_D3D11,
-#endif
-#if CONFIG_MPEG2_D3D12VA_HWACCEL
-    AV_PIX_FMT_D3D12,
-#endif
-#if CONFIG_MPEG2_VAAPI_HWACCEL
-    AV_PIX_FMT_VAAPI,
-#endif
 #if CONFIG_MPEG2_VIDEOTOOLBOX_HWACCEL
     AV_PIX_FMT_VIDEOTOOLBOX,
 #endif
@@ -2654,12 +2629,6 @@ const FFCodec ff_mpeg1video_decoder = {
     .flush                 = flush,
     .p.max_lowres          = 3,
     .hw_configs            = (const AVCodecHWConfigInternal *const []) {
-#if CONFIG_MPEG1_NVDEC_HWACCEL
-                               HWACCEL_NVDEC(mpeg1),
-#endif
-#if CONFIG_MPEG1_VDPAU_HWACCEL
-                               HWACCEL_VDPAU(mpeg1),
-#endif
 #if CONFIG_MPEG1_VIDEOTOOLBOX_HWACCEL
                                HWACCEL_VIDEOTOOLBOX(mpeg1),
 #endif
@@ -2713,27 +2682,6 @@ const FFCodec ff_mpeg2video_decoder = {
     .p.max_lowres   = 3,
     .p.profiles     = NULL_IF_CONFIG_SMALL(ff_mpeg2_video_profiles),
     .hw_configs     = (const AVCodecHWConfigInternal *const []) {
-#if CONFIG_MPEG2_DXVA2_HWACCEL
-                        HWACCEL_DXVA2(mpeg2),
-#endif
-#if CONFIG_MPEG2_D3D11VA_HWACCEL
-                        HWACCEL_D3D11VA(mpeg2),
-#endif
-#if CONFIG_MPEG2_D3D11VA2_HWACCEL
-                        HWACCEL_D3D11VA2(mpeg2),
-#endif
-#if CONFIG_MPEG2_D3D12VA_HWACCEL
-                        HWACCEL_D3D12VA(mpeg2),
-#endif
-#if CONFIG_MPEG2_NVDEC_HWACCEL
-                        HWACCEL_NVDEC(mpeg2),
-#endif
-#if CONFIG_MPEG2_VAAPI_HWACCEL
-                        HWACCEL_VAAPI(mpeg2),
-#endif
-#if CONFIG_MPEG2_VDPAU_HWACCEL
-                        HWACCEL_VDPAU(mpeg2),
-#endif
 #if CONFIG_MPEG2_VIDEOTOOLBOX_HWACCEL
                         HWACCEL_VIDEOTOOLBOX(mpeg2),
 #endif

@@ -28,10 +28,6 @@
 
 #define TABLE_4_3_SIZE ((8191 + 16)*4)
 
-#if CONFIG_HARDCODED_TABLES
-#define mpegaudiodec_common_tableinit()
-#include "libavcodec/mpegaudiodec_common_tables.h"
-#else
 #include <math.h>
 #include "libavutil/attributes.h"
 
@@ -68,5 +64,4 @@ static av_cold void mpegaudiodec_common_tableinit(void)
     }
 }
 
-#endif /* CONFIG_HARDCODED_TABLES */
 #endif /* AVCODEC_MPEGAUDIODEC_COMMON_TABLEGEN_H */

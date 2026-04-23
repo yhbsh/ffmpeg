@@ -22,11 +22,7 @@
 #include "config.h"
 
 #include <stdint.h>
-#if CONFIG_LIBLCEVC_DEC
-#include <LCEVC/lcevc_dec.h>
-#else
 typedef uintptr_t LCEVC_DecoderHandle;
-#endif
 
 typedef struct FFLCEVCContext {
     LCEVC_DecoderHandle decoder;

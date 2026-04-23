@@ -812,12 +812,6 @@ static enum AVPixelFormat get_pixel_format(H264Context *h, int force_callback)
         if (h->avctx->colorspace != AVCOL_SPC_RGB)
             *fmt++ = AV_PIX_FMT_VIDEOTOOLBOX;
 #endif
-#if CONFIG_H264_VULKAN_HWACCEL
-        *fmt++ = AV_PIX_FMT_VULKAN;
-#endif
-#if CONFIG_H264_NVDEC_HWACCEL
-        *fmt++ = AV_PIX_FMT_CUDA;
-#endif
         if (CHROMA444(h)) {
             if (h->avctx->colorspace == AVCOL_SPC_RGB) {
                 *fmt++ = AV_PIX_FMT_GBRP10;
@@ -826,19 +820,10 @@ static enum AVPixelFormat get_pixel_format(H264Context *h, int force_callback)
         } else if (CHROMA422(h))
             *fmt++ = AV_PIX_FMT_YUV422P10;
         else {
-#if CONFIG_H264_VAAPI_HWACCEL
-            // Just add as candidate. Whether VAProfileH264High10 usable or
-            // not is decided by vaapi_decode_make_config() defined in FFmpeg
-            // and vaQueryCodingProfile() defined in libva.
-            *fmt++ = AV_PIX_FMT_VAAPI;
-#endif
             *fmt++ = AV_PIX_FMT_YUV420P10;
         }
         break;
     case 12:
-#if CONFIG_H264_VULKAN_HWACCEL
-        *fmt++ = AV_PIX_FMT_VULKAN;
-#endif
         if (CHROMA444(h)) {
             if (h->avctx->colorspace == AVCOL_SPC_RGB) {
                 *fmt++ = AV_PIX_FMT_GBRP12;
@@ -861,15 +846,6 @@ static enum AVPixelFormat get_pixel_format(H264Context *h, int force_callback)
             *fmt++ = AV_PIX_FMT_YUV420P14;
         break;
     case 8:
-#if CONFIG_H264_VDPAU_HWACCEL
-        *fmt++ = AV_PIX_FMT_VDPAU;
-#endif
-#if CONFIG_H264_VULKAN_HWACCEL
-        *fmt++ = AV_PIX_FMT_VULKAN;
-#endif
-#if CONFIG_H264_NVDEC_HWACCEL
-        *fmt++ = AV_PIX_FMT_CUDA;
-#endif
 #if CONFIG_H264_VIDEOTOOLBOX_HWACCEL
         if (h->avctx->colorspace != AVCOL_SPC_RGB)
             *fmt++ = AV_PIX_FMT_VIDEOTOOLBOX;
@@ -887,19 +863,6 @@ static enum AVPixelFormat get_pixel_format(H264Context *h, int force_callback)
             else
                 *fmt++ = AV_PIX_FMT_YUV422P;
         } else {
-#if CONFIG_H264_DXVA2_HWACCEL
-            *fmt++ = AV_PIX_FMT_DXVA2_VLD;
-#endif
-#if CONFIG_H264_D3D11VA_HWACCEL
-            *fmt++ = AV_PIX_FMT_D3D11VA_VLD;
-            *fmt++ = AV_PIX_FMT_D3D11;
-#endif
-#if CONFIG_H264_D3D12VA_HWACCEL
-            *fmt++ = AV_PIX_FMT_D3D12;
-#endif
-#if CONFIG_H264_VAAPI_HWACCEL
-            *fmt++ = AV_PIX_FMT_VAAPI;
-#endif
             if (h->avctx->color_range == AVCOL_RANGE_JPEG)
                 *fmt++ = AV_PIX_FMT_YUVJ420P;
             else

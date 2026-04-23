@@ -2958,27 +2958,6 @@ static int mov_finalize_stsd_codec(MOVContext *c, AVIOContext *pb,
 
     /* special codec parameters handling */
     switch (st->codecpar->codec_id) {
-#if CONFIG_DV_DEMUXER
-    case AV_CODEC_ID_DVAUDIO:
-        if (c->dv_fctx) {
-            avpriv_request_sample(c->fc, "multiple DV audio streams");
-            return AVERROR(ENOSYS);
-        }
-
-        c->dv_fctx = avformat_alloc_context();
-        if (!c->dv_fctx) {
-            av_log(c->fc, AV_LOG_ERROR, "dv demux context alloc error\n");
-            return AVERROR(ENOMEM);
-        }
-        c->dv_demux = avpriv_dv_init_demux(c->dv_fctx);
-        if (!c->dv_demux) {
-            av_log(c->fc, AV_LOG_ERROR, "dv demux context init error\n");
-            return AVERROR(ENOMEM);
-        }
-        sc->dv_audio_container = 1;
-        st->codecpar->codec_id    = AV_CODEC_ID_PCM_S16LE;
-        break;
-#endif
     /* no ifdef since parameters are always those */
     case AV_CODEC_ID_QCELP:
         av_channel_layout_uninit(&st->codecpar->ch_layout);
@@ -5296,9 +5275,6 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
 #if CONFIG_H261_DECODER || CONFIG_H263_DECODER || CONFIG_MPEG4_DECODER
     switch (st->codecpar->codec_id) {
-#if CONFIG_H261_DECODER
-    case AV_CODEC_ID_H261:
-#endif
 #if CONFIG_H263_DECODER
     case AV_CODEC_ID_H263:
 #endif
@@ -11472,17 +11448,6 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
             return ret;
         }
-#if CONFIG_DV_DEMUXER
-        if (mov->dv_demux && sc->dv_audio_container) {
-            ret = avpriv_dv_produce_packet(mov->dv_demux, NULL, pkt->data, pkt->size, pkt->pos);
-            av_packet_unref(pkt);
-            if (ret < 0)
-                return ret;
-            ret = avpriv_dv_get_packet(mov->dv_demux, pkt);
-            if (ret < 0)
-                return ret;
-        }
-#endif
         if (sc->has_palette) {
             uint8_t *pal;
 

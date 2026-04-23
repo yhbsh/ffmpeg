@@ -99,24 +99,3 @@ const FFFilter ff_vf_realtime = {
 };
 #endif /* CONFIG_REALTIME_FILTER */
 
-#if CONFIG_AREALTIME_FILTER
-
-static const AVFilterPad arealtime_inputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_AUDIO,
-        .filter_frame = filter_frame,
-    },
-};
-
-const FFFilter ff_af_arealtime = {
-    .p.name        = "arealtime",
-    .p.description = NULL_IF_CONFIG_SMALL("Slow down filtering to match realtime."),
-    .p.priv_class  = &realtime_class,
-    .p.flags       = AVFILTER_FLAG_METADATA_ONLY,
-    .priv_size   = sizeof(RealtimeContext),
-    FILTER_INPUTS(arealtime_inputs),
-    FILTER_OUTPUTS(ff_audio_default_filterpad),
-    .process_command = ff_filter_process_command,
-};
-#endif /* CONFIG_AREALTIME_FILTER */

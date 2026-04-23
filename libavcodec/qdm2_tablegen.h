@@ -31,13 +31,6 @@
 #define SOFTCLIP_THRESHOLD 27600
 #define HARDCLIP_THRESHOLD 35716
 
-#if CONFIG_HARDCODED_TABLES
-#define softclip_table_init()
-#define rnd_table_init()
-#define init_noise_samples()
-#define qdm2_init_vlc()
-#include "libavcodec/qdm2_tables.h"
-#else
 static uint16_t softclip_table[HARDCLIP_THRESHOLD - SOFTCLIP_THRESHOLD + 1];
 static float noise_table[4096 + 20];
 static uint8_t random_dequant_index[256][5];
@@ -151,6 +144,5 @@ static av_cold void qdm2_init_vlc(void)
     }
 }
 
-#endif /* CONFIG_HARDCODED_TABLES */
 
 #endif /* AVCODEC_QDM2_TABLEGEN_H */

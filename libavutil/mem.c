@@ -145,10 +145,6 @@ void *av_malloc(size_t size)
         size = 1;
         ptr= av_malloc(1);
     }
-#if CONFIG_MEMORY_POISONING
-    if (ptr)
-        memset(ptr, FF_MEMORY_POISON, size);
-#endif
     return ptr;
 }
 
@@ -162,10 +158,6 @@ void *av_realloc(void *ptr, size_t size)
     ret = _aligned_realloc(ptr, size + !size, ALIGN);
 #else
     ret = realloc(ptr, size + !size);
-#endif
-#if CONFIG_MEMORY_POISONING
-    if (ret && !ptr)
-        memset(ret, FF_MEMORY_POISON, size);
 #endif
     return ret;
 }

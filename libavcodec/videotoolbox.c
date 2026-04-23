@@ -877,13 +877,6 @@ static CFDictionaryRef videotoolbox_decoder_config_create(CMVideoCodecType codec
             CFDictionarySetValue(avc_info, CFSTR("vpcC"), data);
         break;
 #endif
-#if CONFIG_AV1_VIDEOTOOLBOX_HWACCEL
-    case kCMVideoCodecType_AV1 :
-        data = ff_videotoolbox_av1c_extradata_create(avctx);
-        if (data)
-            CFDictionarySetValue(avc_info, CFSTR("av1C"), data);
-        break;
-#endif
     default:
         break;
     }

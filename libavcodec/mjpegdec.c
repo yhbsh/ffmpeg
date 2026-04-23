@@ -747,12 +747,6 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
             s->avctx->pix_fmt = s->hwaccel_pix_fmt;
         } else {
             enum AVPixelFormat pix_fmts[] = {
-#if CONFIG_MJPEG_NVDEC_HWACCEL
-                AV_PIX_FMT_CUDA,
-#endif
-#if CONFIG_MJPEG_VAAPI_HWACCEL
-                AV_PIX_FMT_VAAPI,
-#endif
                 s->avctx->pix_fmt,
                 AV_PIX_FMT_NONE,
             };
@@ -2986,105 +2980,8 @@ const FFCodec ff_mjpeg_decoder = {
                       FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM |
                       FF_CODEC_CAP_ICC_PROFILES,
     .hw_configs     = (const AVCodecHWConfigInternal *const []) {
-#if CONFIG_MJPEG_NVDEC_HWACCEL
-                        HWACCEL_NVDEC(mjpeg),
-#endif
-#if CONFIG_MJPEG_VAAPI_HWACCEL
-                        HWACCEL_VAAPI(mjpeg),
-#endif
                         NULL
                     },
 };
 #endif
-#if CONFIG_THP_DECODER
-const FFCodec ff_thp_decoder = {
-    .p.name         = "thp",
-    CODEC_LONG_NAME("Nintendo Gamecube THP video"),
-    .p.type         = AVMEDIA_TYPE_VIDEO,
-    .p.id           = AV_CODEC_ID_THP,
-    .priv_data_size = sizeof(MJpegDecodeContext),
-    .init           = ff_mjpeg_decode_init,
-    .close          = ff_mjpeg_decode_end,
-    FF_CODEC_DECODE_CB(ff_mjpeg_decode_frame),
-    .flush          = decode_flush,
-    .p.capabilities = AV_CODEC_CAP_DR1,
-    .p.max_lowres   = 3,
-    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
-};
-#endif
 
-#if CONFIG_SMVJPEG_DECODER
-// SMV JPEG just stacks several output frames into one JPEG picture
-// we handle that by setting up the cropping parameters appropriately
-static void smv_process_frame(AVCodecContext *avctx, AVFrame *frame)
-{
-    MJpegDecodeContext *s = avctx->priv_data;
-
-    av_assert0((s->smv_next_frame + 1) * avctx->height <= avctx->coded_height);
-
-    frame->width       = avctx->coded_width;
-    frame->height      = avctx->coded_height;
-    frame->crop_top    = FFMIN(s->smv_next_frame * avctx->height, frame->height);
-    frame->crop_bottom = frame->height - (s->smv_next_frame + 1) * avctx->height;
-
-    if (s->smv_frame->pts != AV_NOPTS_VALUE)
-        s->smv_frame->pts += s->smv_frame->duration;
-    s->smv_next_frame = (s->smv_next_frame + 1) % s->smv_frames_per_jpeg;
-
-    if (s->smv_next_frame == 0)
-        av_frame_unref(s->smv_frame);
-}
-
-static int smvjpeg_receive_frame(AVCodecContext *avctx, AVFrame *frame)
-{
-    MJpegDecodeContext *s = avctx->priv_data;
-    AVPacket *const pkt = avctx->internal->in_pkt;
-    int got_frame = 0;
-    int ret;
-
-    if (s->smv_next_frame > 0)
-        goto return_frame;
-
-    ret = ff_decode_get_packet(avctx, pkt);
-    if (ret < 0)
-        return ret;
-
-    av_frame_unref(s->smv_frame);
-
-    ret = ff_mjpeg_decode_frame(avctx, s->smv_frame, &got_frame, pkt);
-    s->smv_frame->pkt_dts = pkt->dts;
-    av_packet_unref(pkt);
-    if (ret < 0)
-        return ret;
-
-    if (!got_frame)
-        return AVERROR(EAGAIN);
-
-    // packet duration covers all the frames in the packet
-    s->smv_frame->duration /= s->smv_frames_per_jpeg;
-
-return_frame:
-    av_assert0(s->smv_frame->buf[0]);
-    ret = av_frame_ref(frame, s->smv_frame);
-    if (ret < 0)
-        return ret;
-
-    smv_process_frame(avctx, frame);
-    return 0;
-}
-
-const FFCodec ff_smvjpeg_decoder = {
-    .p.name         = "smvjpeg",
-    CODEC_LONG_NAME("SMV JPEG"),
-    .p.type         = AVMEDIA_TYPE_VIDEO,
-    .p.id           = AV_CODEC_ID_SMVJPEG,
-    .priv_data_size = sizeof(MJpegDecodeContext),
-    .init           = ff_mjpeg_decode_init,
-    .close          = ff_mjpeg_decode_end,
-    FF_CODEC_RECEIVE_FRAME_CB(smvjpeg_receive_frame),
-    .flush          = decode_flush,
-    .p.capabilities = AV_CODEC_CAP_DR1,
-    .caps_internal  = FF_CODEC_CAP_EXPORTS_CROPPING |
-                      FF_CODEC_CAP_INIT_CLEANUP,
-};
-#endif

@@ -72,33 +72,6 @@ static void sha1_transform(uint32_t state[5], const uint8_t buffer[64])
     c = state[2];
     d = state[3];
     e = state[4];
-#if CONFIG_SMALL
-    for (i = 0; i < 80; i++) {
-        int t;
-        if (i < 16)
-            t = AV_RB32(buffer + 4 * i);
-        else
-            t = rol(block[i-3] ^ block[i-8] ^ block[i-14] ^ block[i-16], 1);
-        block[i] = t;
-        t += e + rol(a, 5);
-        if (i < 40) {
-            if (i < 20)
-                t += ((b&(c^d))^d)     + 0x5A827999;
-            else
-                t += ( b^c     ^d)     + 0x6ED9EBA1;
-        } else {
-            if (i < 60)
-                t += (((b|c)&d)|(b&c)) + 0x8F1BBCDC;
-            else
-                t += ( b^c     ^d)     + 0xCA62C1D6;
-        }
-        e = d;
-        d = c;
-        c = rol(b, 30);
-        b = a;
-        a = t;
-    }
-#else
 
 #define R1_0 \
     R0(a, b, c, d, e, 0 + i); \
@@ -146,7 +119,6 @@ static void sha1_transform(uint32_t state[5], const uint8_t buffer[64])
     i += 5
 
     R1_60; R1_60; R1_60; R1_60;
-#endif
     state[0] += a;
     state[1] += b;
     state[2] += c;
@@ -214,25 +186,6 @@ static void sha256_transform(uint32_t *state, const uint8_t buffer[64])
     f = state[5];
     g = state[6];
     h = state[7];
-#if CONFIG_SMALL
-    for (i = 0; i < 64; i++) {
-        uint32_t T2;
-        if (i < 16)
-            T1 = blk0(i);
-        else
-            T1 = blk(i);
-        T1 += h + Sigma1_256(e) + Ch(e, f, g) + K256[i];
-        T2 = Sigma0_256(a) + Maj(a, b, c);
-        h = g;
-        g = f;
-        f = e;
-        e = d + T1;
-        d = c;
-        c = b;
-        b = a;
-        a = T1 + T2;
-    }
-#else
 
     i = 0;
 #define R256_0 \
@@ -259,7 +212,6 @@ static void sha256_transform(uint32_t *state, const uint8_t buffer[64])
 
     R256_16; R256_16; R256_16;
     R256_16; R256_16; R256_16;
-#endif
     state[0] += a;
     state[1] += b;
     state[2] += c;
@@ -319,15 +271,6 @@ void av_sha_update(struct AVSHA *ctx, const uint8_t *data, size_t len)
 
     j = ctx->count & 63;
     ctx->count += len;
-#if CONFIG_SMALL
-    for (i = 0; i < len; i++) {
-        ctx->buffer[j++] = data[i];
-        if (64 == j) {
-            ctx->transform(ctx->state, ctx->buffer);
-            j = 0;
-        }
-    }
-#else
     if (len >= 64 - j) {
         const uint8_t *end;
         memcpy(&ctx->buffer[j], data, (i = 64 - j));
@@ -341,7 +284,6 @@ void av_sha_update(struct AVSHA *ctx, const uint8_t *data, size_t len)
         j = 0;
     }
     memcpy(&ctx->buffer[j], data, len);
-#endif
 }
 
 void av_sha_final(AVSHA* ctx, uint8_t *digest)

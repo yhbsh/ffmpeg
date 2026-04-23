@@ -424,15 +424,11 @@ void ff_h264_filter_mb_fast(const H264Context *h, H264SliceContext *sl,
         return;
     }
 
-#if CONFIG_SMALL
-    h264_filter_mb_fast_internal(h, sl, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize, h->pixel_shift);
-#else
     if(h->pixel_shift){
         h264_filter_mb_fast_internal(h, sl, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize, 1);
     }else{
         h264_filter_mb_fast_internal(h, sl, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize, 0);
     }
-#endif
 }
 
 static int check_mv(H264SliceContext *sl, long b_idx, long bn_idx, int mvy_limit)
@@ -831,17 +827,6 @@ void ff_h264_filter_mb(const H264Context *h, H264SliceContext *sl,
         }
     }
 
-#if CONFIG_SMALL
-    {
-        int dir;
-        for (dir = 0; dir < 2; dir++)
-            filter_mb_dir(h, sl, mb_x, mb_y, img_y, img_cb, img_cr, linesize,
-                          uvlinesize, mb_xy, mb_type, mvy_limit,
-                          dir ? 0 : first_vertical_edge_done, a, b,
-                          chroma, dir);
-    }
-#else
     filter_mb_dir(h, sl, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize, mb_xy, mb_type, mvy_limit, first_vertical_edge_done, a, b, chroma, 0);
     filter_mb_dir(h, sl, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize, mb_xy, mb_type, mvy_limit, 0,                        a, b, chroma, 1);
-#endif
 }

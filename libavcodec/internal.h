@@ -30,9 +30,6 @@
 #include "avcodec.h"
 #include "config.h"
 
-#if CONFIG_LCMS2
-# include "fflcms2.h"
-#endif
 
 #define FF_SANE_NB_CHANNELS 512U
 
@@ -145,9 +142,6 @@ typedef struct AVCodecInternal {
     AVFrame *buffer_frame;
     int draining_done;
 
-#if CONFIG_LCMS2
-    FFIccContext icc; /* used to read and write embedded ICC profiles */
-#endif
 
     /**
      * Set when the user has been warned about a failed allocation from

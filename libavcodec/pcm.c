@@ -57,13 +57,6 @@ av_unused av_cold static int pcm_encode_init(AVCodecContext *avctx)
         break;
     }
 #endif
-#if CONFIG_PCM_VIDC_ENCODER
-    case AV_CODEC_ID_PCM_VIDC: {
-        static AVOnce once_vidc = AV_ONCE_INIT;
-        ff_thread_once(&once_vidc, pcm_vidc_tableinit);
-        break;
-    }
-#endif
     default:
         break;
     }
@@ -243,14 +236,6 @@ av_unused static int pcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         }
         break;
 #endif
-#if CONFIG_PCM_VIDC_ENCODER
-    case AV_CODEC_ID_PCM_VIDC:
-        for (; n > 0; n--) {
-            int v = *samples++;
-            *dst++ = linear_to_vidc[(v + 32768) >> 2];
-        }
-        break;
-#endif
     default:
         return -1;
     }
@@ -356,12 +341,6 @@ av_unused av_cold static int pcm_lut_decode_init(AVCodecContext *avctx)
     case AV_CODEC_ID_PCM_MULAW:
         for (int i = 0; i < 256; i++)
             s->table[i] = ulaw2linear(i);
-        break;
-#endif
-#if CONFIG_PCM_VIDC_DECODER
-    case AV_CODEC_ID_PCM_VIDC:
-        for (int i = 0; i < 256; i++)
-            s->table[i] = vidc2linear(i);
         break;
 #endif
     }

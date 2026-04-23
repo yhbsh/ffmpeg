@@ -28,23 +28,11 @@
 
 #include "config.h"
 
-#if CONFIG_LINUX_PERF
-# ifndef _GNU_SOURCE
-#  define _GNU_SOURCE
-# endif
-# include <unistd.h> // read(3)
-# include <sys/ioctl.h>
-# include <asm/unistd.h>
-# include <linux/perf_event.h>
-#endif
 
 #include <stdlib.h>
 #include <stdint.h>
 #include <inttypes.h>
 
-#if CONFIG_MACOS_KPERF
-#include "macos_kperf.h"
-#endif
 
 #if HAVE_MACH_ABSOLUTE_TIME
 #include <mach/mach_time.h>
@@ -113,37 +101,7 @@
         }                                                                 \
     }
 
-#if CONFIG_LINUX_PERF
-
-#define START_TIMER                                                         \
-    static int linux_perf_fd = -1;                                          \
-    uint64_t tperf;                                                         \
-    if (linux_perf_fd == -1) {                                              \
-        struct perf_event_attr attr = {                                     \
-            .type           = PERF_TYPE_HARDWARE,                           \
-            .size           = sizeof(struct perf_event_attr),               \
-            .config         = PERF_COUNT_HW_CPU_CYCLES,                     \
-            .disabled       = 1,                                            \
-            .exclude_kernel = 1,                                            \
-            .exclude_hv     = 1,                                            \
-        };                                                                  \
-        linux_perf_fd = syscall(__NR_perf_event_open, &attr,                \
-                                0, -1, -1, 0);                              \
-    }                                                                       \
-    if (linux_perf_fd == -1) {                                              \
-        av_log(NULL, AV_LOG_ERROR, "perf_event_open failed: %s\n",          \
-               av_err2str(AVERROR(errno)));                                 \
-    } else {                                                                \
-        ioctl(linux_perf_fd, PERF_EVENT_IOC_RESET, 0);                      \
-        ioctl(linux_perf_fd, PERF_EVENT_IOC_ENABLE, 0);                     \
-    }
-
-#define STOP_TIMER(id)                                                      \
-    ioctl(linux_perf_fd, PERF_EVENT_IOC_DISABLE, 0);                        \
-    read(linux_perf_fd, &tperf, sizeof(tperf));                             \
-    TIMER_REPORT(id, tperf)
-
-#elif CONFIG_MACOS_KPERF
+#if CONFIG_MACOS_KPERF
 
 #define START_TIMER                                                         \
     uint64_t tperf;                                                         \

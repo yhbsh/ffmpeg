@@ -35,9 +35,6 @@
 #include "config.h"
 #include "swscale_internal.h"
 #include "swscale.h"
-#if CONFIG_VULKAN
-#include "vulkan/ops.h"
-#endif
 
 DECLARE_ALIGNED(8, const uint8_t, ff_dither_8x8_128)[9][8] = {
     {  36, 68,  60, 92,  34, 66,  58, 90, },
@@ -1450,11 +1447,6 @@ int sws_frame_setup(SwsContext *ctx, const AVFrame *dst, const AVFrame *src)
         if (dev_ctx->type != AV_HWDEVICE_TYPE_VULKAN)
             return AVERROR(ENOTSUP);
 
-#if CONFIG_UNSTABLE && CONFIG_VULKAN
-        ret = ff_sws_vk_init(ctx, src_hwfc->device_ref);
-        if (ret < 0)
-            return ret;
-#endif
     }
 
     for (int field = 0; field < 2; field++) {

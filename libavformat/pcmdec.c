@@ -164,30 +164,3 @@ PCMDEF(alaw,  "PCM A-law",                                      "al",  ALAW)
 PCMDEF(mulaw, "PCM mu-law",                                     "ul", MULAW)
 PCMDEF(vidc,  "PCM Archimedes VIDC",                            NULL,  VIDC)
 
-#if CONFIG_SLN_DEMUXER
-static const AVOption sln_options[] = {
-    { "sample_rate", "", offsetof(PCMAudioDemuxerContext, sample_rate), AV_OPT_TYPE_INT, {.i64 = 8000}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
-    { "ch_layout",   "", offsetof(PCMAudioDemuxerContext, ch_layout),   AV_OPT_TYPE_CHLAYOUT, {.str = "mono"}, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
-    { NULL },
-};
-
-static const AVClass sln_demuxer_class = {
-    .class_name = "sln demuxer",
-    .item_name  = av_default_item_name,
-    .option     = sln_options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
-const FFInputFormat ff_sln_demuxer = {
-    .p.name         = "sln",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("Asterisk raw pcm"),
-    .p.flags        = AVFMT_GENERIC_INDEX,
-    .p.extensions   = "sln",
-    .p.priv_class   = &sln_demuxer_class,
-    .priv_data_size = sizeof(PCMAudioDemuxerContext),
-    .read_header    = pcm_read_header,
-    .read_packet    = ff_pcm_read_packet,
-    .read_seek      = ff_pcm_read_seek,
-    .raw_codec_id   = AV_CODEC_ID_PCM_S16LE,
-};
-#endif

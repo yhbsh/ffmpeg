@@ -149,31 +149,6 @@ static void ripemd128_transform(uint32_t *state, const uint8_t buffer[64])
         block[n] = AV_RL32(buffer + 4 * n);
     n = 0;
 
-#if CONFIG_SMALL
-    for (; n < 16;) {
-        ROUND128_0_TO_15(a,b,c,d,e,f,g,h);
-        t = d; d = c; c = b; b = a; a = t;
-        t = h; h = g; g = f; f = e; e = t;
-    }
-
-    for (; n < 32;) {
-        ROUND128_16_TO_31(a,b,c,d,e,f,g,h);
-        t = d; d = c; c = b; b = a; a = t;
-        t = h; h = g; g = f; f = e; e = t;
-    }
-
-    for (; n < 48;) {
-        ROUND128_32_TO_47(a,b,c,d,e,f,g,h);
-        t = d; d = c; c = b; b = a; a = t;
-        t = h; h = g; g = f; f = e; e = t;
-    }
-
-    for (; n < 64;) {
-        ROUND128_48_TO_63(a,b,c,d,e,f,g,h);
-        t = d; d = c; c = b; b = a; a = t;
-        t = h; h = g; g = f; f = e; e = t;
-    }
-#else
 
     R128_0; R128_0; R128_0; R128_0;
 
@@ -182,7 +157,6 @@ static void ripemd128_transform(uint32_t *state, const uint8_t buffer[64])
     R128_32; R128_32; R128_32; R128_32;
 
     R128_48; R128_48; R128_48; R128_48;
-#endif
 
     h += c + state[1];
     state[1] = state[2] + d + e;
@@ -204,35 +178,6 @@ static void ripemd256_transform(uint32_t *state, const uint8_t buffer[64])
         block[n] = AV_RL32(buffer + 4 * n);
     n = 0;
 
-#if CONFIG_SMALL
-    for (; n < 16;) {
-        ROUND128_0_TO_15(a,b,c,d,e,f,g,h);
-        t = d; d = c; c = b; b = a; a = t;
-        t = h; h = g; g = f; f = e; e = t;
-    }
-    FFSWAP(uint32_t, a, e);
-
-    for (; n < 32;) {
-        ROUND128_16_TO_31(a,b,c,d,e,f,g,h);
-        t = d; d = c; c = b; b = a; a = t;
-        t = h; h = g; g = f; f = e; e = t;
-    }
-    FFSWAP(uint32_t, b, f);
-
-    for (; n < 48;) {
-        ROUND128_32_TO_47(a,b,c,d,e,f,g,h);
-        t = d; d = c; c = b; b = a; a = t;
-        t = h; h = g; g = f; f = e; e = t;
-    }
-    FFSWAP(uint32_t, c, g);
-
-    for (; n < 64;) {
-        ROUND128_48_TO_63(a,b,c,d,e,f,g,h);
-        t = d; d = c; c = b; b = a; a = t;
-        t = h; h = g; g = f; f = e; e = t;
-    }
-    FFSWAP(uint32_t, d, h);
-#else
 
     R128_0; R128_0; R128_0; R128_0;
     FFSWAP(uint32_t, a, e);
@@ -245,7 +190,6 @@ static void ripemd256_transform(uint32_t *state, const uint8_t buffer[64])
 
     R128_48; R128_48; R128_48; R128_48;
     FFSWAP(uint32_t, d, h);
-#endif
 
     state[0] += a; state[1] += b; state[2] += c; state[3] += d;
     state[4] += e; state[5] += f; state[6] += g; state[7] += h;
@@ -332,37 +276,6 @@ static void ripemd160_transform(uint32_t *state, const uint8_t buffer[64])
         block[n] = AV_RL32(buffer + 4 * n);
     n = 0;
 
-#if CONFIG_SMALL
-    for (; n < 16;) {
-        ROUND160_0_TO_15(a,b,c,d,e,f,g,h,i,j);
-        t = e; e = d; d = c; c = b; b = a; a = t;
-        t = j; j = i; i = h; h = g; g = f; f = t;
-    }
-
-    for (; n < 32;) {
-        ROUND160_16_TO_31(a,b,c,d,e,f,g,h,i,j);
-        t = e; e = d; d = c; c = b; b = a; a = t;
-        t = j; j = i; i = h; h = g; g = f; f = t;
-    }
-
-    for (; n < 48;) {
-        ROUND160_32_TO_47(a,b,c,d,e,f,g,h,i,j);
-        t = e; e = d; d = c; c = b; b = a; a = t;
-        t = j; j = i; i = h; h = g; g = f; f = t;
-    }
-
-    for (; n < 64;) {
-        ROUND160_48_TO_63(a,b,c,d,e,f,g,h,i,j);
-        t = e; e = d; d = c; c = b; b = a; a = t;
-        t = j; j = i; i = h; h = g; g = f; f = t;
-    }
-
-    for (; n < 80;) {
-        ROUND160_64_TO_79(a,b,c,d,e,f,g,h,i,j);
-        t = e; e = d; d = c; c = b; b = a; a = t;
-        t = j; j = i; i = h; h = g; g = f; f = t;
-    }
-#else
 
     R160_0; R160_0; R160_0;
     ROUND160_0_TO_15(a,b,c,d,e,f,g,h,i,j);
@@ -378,7 +291,6 @@ static void ripemd160_transform(uint32_t *state, const uint8_t buffer[64])
 
     R160_64; R160_64; R160_64;
     ROUND160_64_TO_79(b,c,d,e,a,g,h,i,j,f);
-#endif
 
     i += c + state[1];
     state[1] = state[2] + d + j;
@@ -401,42 +313,6 @@ static void ripemd320_transform(uint32_t *state, const uint8_t buffer[64])
         block[n] = AV_RL32(buffer + 4 * n);
     n = 0;
 
-#if CONFIG_SMALL
-    for (; n < 16;) {
-        ROUND160_0_TO_15(a,b,c,d,e,f,g,h,i,j);
-        t = e; e = d; d = c; c = b; b = a; a = t;
-        t = j; j = i; i = h; h = g; g = f; f = t;
-    }
-    FFSWAP(uint32_t, b, g);
-
-    for (; n < 32;) {
-        ROUND160_16_TO_31(a,b,c,d,e,f,g,h,i,j);
-        t = e; e = d; d = c; c = b; b = a; a = t;
-        t = j; j = i; i = h; h = g; g = f; f = t;
-    }
-    FFSWAP(uint32_t, d, i);
-
-    for (; n < 48;) {
-        ROUND160_32_TO_47(a,b,c,d,e,f,g,h,i,j);
-        t = e; e = d; d = c; c = b; b = a; a = t;
-        t = j; j = i; i = h; h = g; g = f; f = t;
-    }
-    FFSWAP(uint32_t, a, f);
-
-    for (; n < 64;) {
-        ROUND160_48_TO_63(a,b,c,d,e,f,g,h,i,j);
-        t = e; e = d; d = c; c = b; b = a; a = t;
-        t = j; j = i; i = h; h = g; g = f; f = t;
-    }
-    FFSWAP(uint32_t, c, h);
-
-    for (; n < 80;) {
-        ROUND160_64_TO_79(a,b,c,d,e,f,g,h,i,j);
-        t = e; e = d; d = c; c = b; b = a; a = t;
-        t = j; j = i; i = h; h = g; g = f; f = t;
-    }
-    FFSWAP(uint32_t, e, j);
-#else
 
     R160_0; R160_0; R160_0;
     ROUND160_0_TO_15(a,b,c,d,e,f,g,h,i,j);
@@ -457,7 +333,6 @@ static void ripemd320_transform(uint32_t *state, const uint8_t buffer[64])
     R160_64; R160_64; R160_64;
     ROUND160_64_TO_79(b,c,d,e,a,g,h,i,j,f);
     FFSWAP(uint32_t, e, j);
-#endif
 
     state[0] += a; state[1] += b; state[2] += c; state[3] += d; state[4] += e;
     state[5] += f; state[6] += g; state[7] += h; state[8] += i; state[9] += j;
@@ -520,15 +395,6 @@ void av_ripemd_update(AVRIPEMD* ctx, const uint8_t* data, size_t len)
 
     j = ctx->count & 63;
     ctx->count += len;
-#if CONFIG_SMALL
-    for (i = 0; i < len; i++) {
-        ctx->buffer[j++] = data[i];
-        if (64 == j) {
-            ctx->transform(ctx->state, ctx->buffer);
-            j = 0;
-        }
-    }
-#else
     if (len >= 64 - j) {
         const uint8_t *end;
         memcpy(&ctx->buffer[j], data, (i = 64 - j));
@@ -542,7 +408,6 @@ void av_ripemd_update(AVRIPEMD* ctx, const uint8_t* data, size_t len)
         j = 0;
     }
     memcpy(&ctx->buffer[j], data, len);
-#endif
 }
 
 void av_ripemd_final(AVRIPEMD* ctx, uint8_t *digest)

@@ -24,11 +24,7 @@
 #include "config.h"
 #include "libavutil/mem_internal.h"
 
-#if CONFIG_HARDCODED_TABLES
-#   define SINETABLE_CONST const
-#else
 #   define SINETABLE_CONST
-#endif
 
 #define SINETABLE(size) \
     SINETABLE_CONST DECLARE_ALIGNED(32, float, ff_sine_##size)[size]

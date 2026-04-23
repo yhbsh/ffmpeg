@@ -103,16 +103,6 @@ int ff_raw_subtitle_read_header(AVFormatContext *s)
     return 0;
 }
 
-static int raw_data_read_header(AVFormatContext *s)
-{
-    AVStream *st = avformat_new_stream(s, NULL);
-    if (!st)
-        return AVERROR(ENOMEM);
-    st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
-    st->codecpar->codec_id = ffifmt(s->iformat)->raw_codec_id;
-    st->start_time = 0;
-    return 0;
-}
 
 /* Note: Do not forget to add new entries to the Makefile as well. */
 
@@ -145,18 +135,6 @@ const AVClass ff_raw_demuxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-#if CONFIG_DATA_DEMUXER
-const FFInputFormat ff_data_demuxer = {
-    .p.name         = "data",
-    .p.long_name    = NULL_IF_CONFIG_SMALL("raw data"),
-    .p.flags        = AVFMT_NOTIMESTAMPS,
-    .p.priv_class   = &ff_raw_demuxer_class,
-    .read_header    = raw_data_read_header,
-    .read_packet    = ff_raw_read_partial_packet,
-    .raw_codec_id   = AV_CODEC_ID_NONE,
-    .priv_data_size = sizeof(FFRawDemuxerContext),\
-};
-#endif
 
 #if CONFIG_MJPEG_DEMUXER
 static int mjpeg_probe(const AVProbeData *p)

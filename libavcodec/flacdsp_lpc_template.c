@@ -111,21 +111,6 @@ static void FUNC(flac_lpc_encode_c)(int32_t *res, const int32_t *smp, int len,
     int i;
     for (i = 0; i < order; i++)
         res[i] = smp[i];
-#if CONFIG_SMALL
-    for (i = order; i < len; i += 2) {
-        int j;
-        int s  = smp[i];
-        sum_type p0 = 0, p1 = 0;
-        for (j = 0; j < order; j++) {
-            int c = coefs[j];
-            p1   += MUL(c, s);
-            s     = smp[i-j-1];
-            p0   += MUL(c, s);
-        }
-        res[i  ] = smp[i  ] - CLIP(p0 >> shift);
-        res[i+1] = smp[i+1] - CLIP(p1 >> shift);
-    }
-#else
     switch (order) {
     case  1: FUNC(lpc_encode_unrolled)(res, smp, len,     1, coefs, shift, 0); break;
     case  2: FUNC(lpc_encode_unrolled)(res, smp, len,     2, coefs, shift, 0); break;
@@ -137,7 +122,6 @@ static void FUNC(flac_lpc_encode_c)(int32_t *res, const int32_t *smp, int len,
     case  8: FUNC(lpc_encode_unrolled)(res, smp, len,     8, coefs, shift, 0); break;
     default: FUNC(lpc_encode_unrolled)(res, smp, len, order, coefs, shift, 1); break;
     }
-#endif
 }
 
 /* Comment for clarity/de-obfuscation.

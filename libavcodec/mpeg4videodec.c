@@ -4098,15 +4098,6 @@ const FFCodec ff_mpeg4_decoder = {
     UPDATE_THREAD_CONTEXT_FOR_USER(mpeg4_update_thread_context_for_user),
     .p.priv_class = &mpeg4_class,
     .hw_configs            = (const AVCodecHWConfigInternal *const []) {
-#if CONFIG_MPEG4_NVDEC_HWACCEL
-                               HWACCEL_NVDEC(mpeg4),
-#endif
-#if CONFIG_MPEG4_VAAPI_HWACCEL
-                               HWACCEL_VAAPI(mpeg4),
-#endif
-#if CONFIG_MPEG4_VDPAU_HWACCEL
-                               HWACCEL_VDPAU(mpeg4),
-#endif
 #if CONFIG_MPEG4_VIDEOTOOLBOX_HWACCEL
                                HWACCEL_VIDEOTOOLBOX(mpeg4),
 #endif

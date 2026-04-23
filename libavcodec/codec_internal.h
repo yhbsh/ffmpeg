@@ -326,11 +326,7 @@ int ff_default_get_supported_config(const struct AVCodecContext *avctx,
                                     const void **out_configs,
                                     int *out_num_configs);
 
-#if CONFIG_SMALL
-#define CODEC_LONG_NAME(str) .p.long_name = NULL
-#else
 #define CODEC_LONG_NAME(str) .p.long_name = str
-#endif
 
 #if HAVE_THREADS
 #define UPDATE_THREAD_CONTEXT(func) \

@@ -840,16 +840,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
     av_log(avctx, AV_LOG_DEBUG, "intra_quant_bias = %d inter_quant_bias = %d\n",s->intra_quant_bias,s->inter_quant_bias);
 
     switch (avctx->codec->id) {
-#if CONFIG_MPEG1VIDEO_ENCODER || CONFIG_MPEG2VIDEO_ENCODER
-    case AV_CODEC_ID_MPEG2VIDEO:
-        s->rtp_mode   = 1;
-        /* fallthrough */
-    case AV_CODEC_ID_MPEG1VIDEO:
-        s->c.out_format = FMT_MPEG1;
-        s->c.low_delay  = !!(avctx->flags & AV_CODEC_FLAG_LOW_DELAY);
-        avctx->delay  = s->c.low_delay ? 0 : (m->max_b_frames + 1);
-        break;
-#endif
 #if CONFIG_MJPEG_ENCODER || CONFIG_AMV_ENCODER
     case AV_CODEC_ID_MJPEG:
     case AV_CODEC_ID_AMV:
@@ -908,27 +898,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
         avctx->delay = 0;
         s->c.low_delay = 1;
         break;
-#if CONFIG_RV10_ENCODER
-    case AV_CODEC_ID_RV10:
-        s->c.out_format = FMT_H263;
-        avctx->delay  = 0;
-        s->c.low_delay  = 1;
-        break;
-#endif
-#if CONFIG_RV20_ENCODER
-    case AV_CODEC_ID_RV20:
-        m->encode_picture_header = ff_rv20_encode_picture_header;
-        s->c.out_format      = FMT_H263;
-        avctx->delay       = 0;
-        s->c.low_delay       = 1;
-        s->modified_quant  = 1;
-        // Set here to force allocation of dc_val;
-        // will be set later on a per-frame basis.
-        s->c.h263_aic        = 1;
-        s->loop_filter     = 1;
-        s->me.unrestricted_mv = 0;
-        break;
-#endif
     case AV_CODEC_ID_MPEG4:
         s->c.out_format      = FMT_H263;
         s->c.h263_pred       = 1;
@@ -1028,10 +997,6 @@ av_cold int ff_mpv_encode_init(AVCodecContext *avctx)
 
     if (CONFIG_H263_ENCODER && s->c.out_format == FMT_H263) {
         ff_h263_encode_init(m);
-#if CONFIG_MSMPEG4ENC
-        if (s->c.msmpeg4_version != MSMP4_UNUSED)
-            ff_msmpeg4_encode_init(m);
-#endif
     }
 
     s->c.slice_ctx_size = sizeof(*s);
@@ -3103,12 +3068,6 @@ static int encode_thread(AVCodecContext *c, void *arg){
                             ff_mpeg1_clean_buffers(s);
                         }
                     break;
-#if CONFIG_H263P_ENCODER
-                    case AV_CODEC_ID_H263P:
-                        if (s->c.dc_val)
-                            ff_h263_mpeg4_reset_dc(s);
-                        // fallthrough
-#endif
                     case AV_CODEC_ID_H263:
                         if (CONFIG_H263_ENCODER) {
                             if (s->mb_info && put_bytes_count(&s->pb, 0) - s->prev_mb_info >= s->mb_info)
@@ -3566,12 +3525,6 @@ static int encode_thread(AVCodecContext *c, void *arg){
         }
     }
 
-#if CONFIG_MSMPEG4ENC
-    //not beautiful here but we must write it before flushing so it has to be here
-    if (s->c.msmpeg4_version != MSMP4_UNUSED && s->c.msmpeg4_version < MSMP4_WMV1 &&
-        s->c.pict_type == AV_PICTURE_TYPE_I)
-        ff_msmpeg4_encode_ext_header(s);
-#endif
 
     write_slice_end(s);
 

@@ -39,9 +39,6 @@ const SwsOpBackend * const ff_sws_op_backends[] = {
     &backend_x86,
 #endif
     &backend_c,
-#if CONFIG_VULKAN
-    &backend_vulkan,
-#endif
     NULL
 };
 

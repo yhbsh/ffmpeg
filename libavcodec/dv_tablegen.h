@@ -28,13 +28,8 @@
 
 #include "dvdata.h"
 
-#if CONFIG_SMALL
-#define DV_VLC_MAP_RUN_SIZE  15
-#define DV_VLC_MAP_LEV_SIZE  23
-#else
 #define DV_VLC_MAP_RUN_SIZE  64
 #define DV_VLC_MAP_LEV_SIZE 512 // FIXME sign was removed so this should be /2 but needs check
-#endif
 
 /* VLC encoding lookup table */
 typedef struct dv_vlc_pair {
@@ -42,10 +37,6 @@ typedef struct dv_vlc_pair {
     uint32_t size;
 } dv_vlc_pair;
 
-#if CONFIG_HARDCODED_TABLES
-#define dv_vlc_map_tableinit()
-#include "libavcodec/dv_tables.h"
-#else
 static struct dv_vlc_pair dv_vlc_map[DV_VLC_MAP_RUN_SIZE][DV_VLC_MAP_LEV_SIZE];
 
 static av_cold void dv_vlc_map_tableinit(void)
@@ -96,6 +87,5 @@ static av_cold void dv_vlc_map_tableinit(void)
 #endif
     }
 }
-#endif /* CONFIG_HARDCODED_TABLES */
 
 #endif /* AVCODEC_DV_TABLEGEN_H */

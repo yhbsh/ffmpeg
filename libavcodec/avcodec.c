@@ -467,9 +467,6 @@ av_cold void ff_codec_close(AVCodecContext *avctx)
 
         av_bsf_free(&avci->bsf);
 
-#if CONFIG_LCMS2
-        ff_icc_context_uninit(&avci->icc);
-#endif
 
         av_freep(&avctx->internal);
     }

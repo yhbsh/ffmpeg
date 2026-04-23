@@ -195,9 +195,6 @@ av_cold int swr_init(struct SwrContext *s){
     s->dither.method = s->user_dither_method;
 
     switch(s->engine){
-#if CONFIG_LIBSOXR
-        case SWR_ENGINE_SOXR: s->resampler = &swri_soxr_resampler; break;
-#endif
         case SWR_ENGINE_SWR : s->resampler = &swri_resampler; break;
         default:
             av_log(s, AV_LOG_ERROR, "Requested resampling engine is unavailable\n");

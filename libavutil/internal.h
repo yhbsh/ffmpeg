@@ -88,11 +88,7 @@
  * Return NULL if CONFIG_SMALL is true, otherwise the argument
  * without modification. Used to disable the definition of strings.
  */
-#if CONFIG_SMALL
-#   define NULL_IF_CONFIG_SMALL(x) NULL
-#else
 #   define NULL_IF_CONFIG_SMALL(x) x
-#endif
 
 /**
  * Log a generic warning message about a missing feature.

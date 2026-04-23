@@ -50,15 +50,6 @@
 #include "wmv2dec.h"
 
 static const enum AVPixelFormat h263_hwaccel_pixfmt_list_420[] = {
-#if CONFIG_H263_VAAPI_HWACCEL || CONFIG_MPEG4_VAAPI_HWACCEL
-    AV_PIX_FMT_VAAPI,
-#endif
-#if CONFIG_MPEG4_NVDEC_HWACCEL
-    AV_PIX_FMT_CUDA,
-#endif
-#if CONFIG_MPEG4_VDPAU_HWACCEL
-    AV_PIX_FMT_VDPAU,
-#endif
 #if CONFIG_H263_VIDEOTOOLBOX_HWACCEL || CONFIG_MPEG4_VIDEOTOOLBOX_HWACCEL
     AV_PIX_FMT_VIDEOTOOLBOX,
 #endif
@@ -153,16 +144,6 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     case AV_CODEC_ID_RV10:
     case AV_CODEC_ID_RV20:
         break;
-#if CONFIG_H263I_DECODER
-    case AV_CODEC_ID_H263I:
-        h->decode_header = ff_intel_h263_decode_picture_header;
-        break;
-#endif
-#if CONFIG_FLV_DECODER
-    case AV_CODEC_ID_FLV1:
-        h->decode_header = ff_flv_decode_picture_header;
-        break;
-#endif
     default:
         av_unreachable("Switch contains a case for every codec using ff_h263_decode_init()");
     }
@@ -571,15 +552,6 @@ int ff_h263_decode_frame(AVCodecContext *avctx, AVFrame *pict,
     /* the second part of the wmv2 header contains the MB skip bits which
      * are stored in current_picture->mb_type which is not available before
      * ff_mpv_frame_start() */
-#if CONFIG_WMV2_DECODER
-    if (h->c.msmpeg4_version == MSMP4_WMV2) {
-        ret = ff_wmv2_decode_secondary_picture_header(h);
-        if (ret < 0)
-            return ret;
-        if (ret == 1)
-            goto frame_end;
-    }
-#endif
 
     /* decode each macroblock */
     h->c.mb_x = 0;
@@ -662,15 +634,6 @@ frame_end:
 }
 
 static const AVCodecHWConfigInternal *const h263_hw_config_list[] = {
-#if CONFIG_H263_VAAPI_HWACCEL
-    HWACCEL_VAAPI(h263),
-#endif
-#if CONFIG_MPEG4_NVDEC_HWACCEL
-    HWACCEL_NVDEC(mpeg4),
-#endif
-#if CONFIG_MPEG4_VDPAU_HWACCEL
-    HWACCEL_VDPAU(mpeg4),
-#endif
 #if CONFIG_H263_VIDEOTOOLBOX_HWACCEL
     HWACCEL_VIDEOTOOLBOX(h263),
 #endif

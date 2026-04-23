@@ -30,9 +30,7 @@
 #include <windows.h>
 #include <bcrypt.h>
 #endif
-#if CONFIG_GCRYPT
-#include <gcrypt.h>
-#elif CONFIG_OPENSSL
+#if CONFIG_OPENSSL
 #include <openssl/rand.h>
 #endif
 #include <fcntl.h>
@@ -181,10 +179,7 @@ int av_random_bytes(uint8_t* buf, size_t len)
     if (!err)
         return err;
 
-#if CONFIG_GCRYPT
-    gcry_randomize(buf, len, GCRY_VERY_STRONG_RANDOM);
-    return 0;
-#elif CONFIG_OPENSSL
+#if CONFIG_OPENSSL
     if (RAND_bytes(buf, len) == 1)
         return 0;
     return AVERROR_EXTERNAL;

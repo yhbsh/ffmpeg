@@ -33,11 +33,6 @@
 #define SINETABLE(size) \
     static SINETABLE_CONST DECLARE_ALIGNED(32, int, sine_##size##_fixed)[size]
 
-#if CONFIG_HARDCODED_TABLES
-#define init_sine_windows_fixed()
-#define SINETABLE_CONST const
-#include "libavcodec/sinewin_fixed_tables.h"
-#else
 // do not use libavutil/libm.h since this is compiled both
 // for the host and the target and config.h is only valid for the target
 #include <math.h>
@@ -73,5 +68,4 @@ static av_cold void init_sine_windows_fixed(void)
     sine_window_init_fixed(sine_960_fixed,  960);
     sine_window_init_fixed(sine_1024_fixed, 1024);
 }
-#endif /* CONFIG_HARDCODED_TABLES */
 #endif /* AVCODEC_SINEWIN_FIXED_TABLEGEN_H */

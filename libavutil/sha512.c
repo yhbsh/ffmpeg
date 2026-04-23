@@ -132,25 +132,6 @@ static void sha512_transform(uint64_t *state, const uint8_t buffer[128])
     f = state[5];
     g = state[6];
     h = state[7];
-#if CONFIG_SMALL
-    for (i = 0; i < 80; i++) {
-        uint64_t T2;
-        if (i < 16)
-            T1 = blk0(i);
-        else
-            T1 = blk(i);
-        T1 += h + Sigma1_512(e) + Ch(e, f, g) + K512[i];
-        T2 = Sigma0_512(a) + Maj(a, b, c);
-        h = g;
-        g = f;
-        f = e;
-        e = d + T1;
-        d = c;
-        c = b;
-        b = a;
-        a = T1 + T2;
-    }
-#else
 
 #define R512_0 \
     ROUND512_0_TO_15(a, b, c, d, e, f, g, h); \
@@ -177,7 +158,6 @@ static void sha512_transform(uint64_t *state, const uint8_t buffer[128])
 
     R512_16; R512_16; R512_16; R512_16;
     R512_16; R512_16; R512_16; R512_16;
-#endif
     state[0] += a;
     state[1] += b;
     state[2] += c;
@@ -247,15 +227,6 @@ void av_sha512_update(AVSHA512* ctx, const uint8_t* data, size_t len)
 
     j = ctx->count & 127;
     ctx->count += len;
-#if CONFIG_SMALL
-    for (i = 0; i < len; i++) {
-        ctx->buffer[j++] = data[i];
-        if (128 == j) {
-            sha512_transform(ctx->state, ctx->buffer);
-            j = 0;
-        }
-    }
-#else
     if (len >= 128 - j) {
         const uint8_t *end;
         memcpy(&ctx->buffer[j], data, (i = 128 - j));
@@ -269,7 +240,6 @@ void av_sha512_update(AVSHA512* ctx, const uint8_t* data, size_t len)
         j = 0;
     }
     memcpy(&ctx->buffer[j], data, len);
-#endif
 }
 
 void av_sha512_final(AVSHA512* ctx, uint8_t *digest)

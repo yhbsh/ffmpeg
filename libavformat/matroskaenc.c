@@ -3704,27 +3704,3 @@ const FFOutputFormat ff_webm_muxer = {
 };
 #endif
 
-#if CONFIG_MATROSKA_AUDIO_MUXER
-const FFOutputFormat ff_matroska_audio_muxer = {
-    .p.name            = "matroska",
-    .p.long_name       = NULL_IF_CONFIG_SMALL("Matroska Audio"),
-    .p.mime_type       = "audio/x-matroska",
-    .p.extensions      = "mka",
-    .priv_data_size    = sizeof(MatroskaMuxContext),
-    .p.audio_codec     = CONFIG_LIBVORBIS_ENCODER ?
-                         AV_CODEC_ID_VORBIS : AV_CODEC_ID_AC3,
-    .p.video_codec     = AV_CODEC_ID_NONE,
-    .init              = mkv_init,
-    .deinit            = mkv_deinit,
-    .write_header      = mkv_write_header,
-    .write_packet      = mkv_write_flush_packet,
-    .write_trailer     = mkv_write_trailer,
-    .check_bitstream   = mkv_check_bitstream,
-    .p.flags           = AVFMT_GLOBALHEADER | AVFMT_TS_NONSTRICT,
-    .p.codec_tag       = (const AVCodecTag* const []){
-        ff_codec_wav_tags, additional_audio_tags, 0
-    },
-    .p.priv_class      = &matroska_webm_class,
-    .flags_internal    = FF_OFMT_FLAG_ALLOW_FLUSH,
-};
-#endif

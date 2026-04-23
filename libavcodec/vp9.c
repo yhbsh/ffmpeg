@@ -189,65 +189,19 @@ static int update_size(AVCodecContext *avctx, int w, int h)
         switch (s->pix_fmt) {
         case AV_PIX_FMT_YUV420P:
         case AV_PIX_FMT_YUV420P10:
-#if CONFIG_VP9_DXVA2_HWACCEL
-            *fmtp++ = AV_PIX_FMT_DXVA2_VLD;
-#endif
-#if CONFIG_VP9_D3D11VA_HWACCEL
-            *fmtp++ = AV_PIX_FMT_D3D11VA_VLD;
-            *fmtp++ = AV_PIX_FMT_D3D11;
-#endif
-#if CONFIG_VP9_D3D12VA_HWACCEL
-            *fmtp++ = AV_PIX_FMT_D3D12;
-#endif
-#if CONFIG_VP9_NVDEC_HWACCEL
-            *fmtp++ = AV_PIX_FMT_CUDA;
-#endif
-#if CONFIG_VP9_VAAPI_HWACCEL
-            *fmtp++ = AV_PIX_FMT_VAAPI;
-#endif
-#if CONFIG_VP9_VDPAU_HWACCEL
-            *fmtp++ = AV_PIX_FMT_VDPAU;
-#endif
 #if CONFIG_VP9_VIDEOTOOLBOX_HWACCEL
             *fmtp++ = AV_PIX_FMT_VIDEOTOOLBOX;
 #endif
-#if CONFIG_VP9_VULKAN_HWACCEL
-            *fmtp++ = AV_PIX_FMT_VULKAN;
-#endif
             break;
         case AV_PIX_FMT_YUV420P12:
-#if CONFIG_VP9_NVDEC_HWACCEL
-            *fmtp++ = AV_PIX_FMT_CUDA;
-#endif
-#if CONFIG_VP9_VAAPI_HWACCEL
-            *fmtp++ = AV_PIX_FMT_VAAPI;
-#endif
-#if CONFIG_VP9_VDPAU_HWACCEL
-            *fmtp++ = AV_PIX_FMT_VDPAU;
-#endif
-#if CONFIG_VP9_VULKAN_HWACCEL
-            *fmtp++ = AV_PIX_FMT_VULKAN;
-#endif
             break;
         case AV_PIX_FMT_YUV444P:
         case AV_PIX_FMT_YUV444P10:
         case AV_PIX_FMT_YUV444P12:
-#if CONFIG_VP9_VAAPI_HWACCEL
-            *fmtp++ = AV_PIX_FMT_VAAPI;
-#endif
-#if CONFIG_VP9_VULKAN_HWACCEL
-            *fmtp++ = AV_PIX_FMT_VULKAN;
-#endif
             break;
         case AV_PIX_FMT_GBRP:
         case AV_PIX_FMT_GBRP10:
         case AV_PIX_FMT_GBRP12:
-#if CONFIG_VP9_VAAPI_HWACCEL
-            *fmtp++ = AV_PIX_FMT_VAAPI;
-#endif
-#if CONFIG_VP9_VULKAN_HWACCEL
-            *fmtp++ = AV_PIX_FMT_VULKAN;
-#endif
             break;
         }
 
@@ -1933,32 +1887,8 @@ const FFCodec ff_vp9_decoder = {
     .p.profiles            = NULL_IF_CONFIG_SMALL(ff_vp9_profiles),
     .bsfs                  = "vp9_superframe_split",
     .hw_configs            = (const AVCodecHWConfigInternal *const []) {
-#if CONFIG_VP9_DXVA2_HWACCEL
-                               HWACCEL_DXVA2(vp9),
-#endif
-#if CONFIG_VP9_D3D11VA_HWACCEL
-                               HWACCEL_D3D11VA(vp9),
-#endif
-#if CONFIG_VP9_D3D11VA2_HWACCEL
-                               HWACCEL_D3D11VA2(vp9),
-#endif
-#if CONFIG_VP9_D3D12VA_HWACCEL
-                               HWACCEL_D3D12VA(vp9),
-#endif
-#if CONFIG_VP9_NVDEC_HWACCEL
-                               HWACCEL_NVDEC(vp9),
-#endif
-#if CONFIG_VP9_VAAPI_HWACCEL
-                               HWACCEL_VAAPI(vp9),
-#endif
-#if CONFIG_VP9_VDPAU_HWACCEL
-                               HWACCEL_VDPAU(vp9),
-#endif
 #if CONFIG_VP9_VIDEOTOOLBOX_HWACCEL
                                HWACCEL_VIDEOTOOLBOX(vp9),
-#endif
-#if CONFIG_VP9_VULKAN_HWACCEL
-                               HWACCEL_VULKAN(vp9),
 #endif
                                NULL
                            },

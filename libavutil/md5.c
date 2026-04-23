@@ -113,16 +113,6 @@ static void body(uint32_t ABCD[4], const uint8_t *src, size_t nblocks)
 
         X = (const uint32_t *)src + n * 16;
 
-#if CONFIG_SMALL
-        for (int i = 0; i < 64; i++) {
-            CORE(i, a, b, c, d);
-            t = d;
-            d = c;
-            c = b;
-            b = a;
-            a = t;
-        }
-#else
 #define CORE2(i)                                                        \
         CORE(i, a, b, c, d); CORE((i + 1), d, a, b, c);                 \
         CORE((i + 2), c, d, a, b); CORE((i + 3), b, c, d, a)
@@ -131,7 +121,6 @@ static void body(uint32_t ABCD[4], const uint8_t *src, size_t nblocks)
         CORE4(16);
         CORE4(32);
         CORE4(48);
-#endif
 
         ABCD[0] += d;
         ABCD[1] += c;

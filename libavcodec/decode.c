@@ -94,14 +94,6 @@ typedef struct DecodeContext {
      */
     uint64_t side_data_pref_mask;
 
-#if CONFIG_LIBLCEVC_DEC
-    struct {
-        FFLCEVCContext *ctx;
-        int frame;
-        int width;
-        int height;
-    } lcevc;
-#endif
 } DecodeContext;
 
 static DecodeContext *decode_ctx(AVCodecInternal *avci)
@@ -508,55 +500,10 @@ static inline int decode_simple_internal(AVCodecContext *avctx, AVFrame *frame, 
     return ret;
 }
 
-#if CONFIG_LCMS2
-static int detect_colorspace(AVCodecContext *avctx, AVFrame *frame)
-{
-    AVCodecInternal *avci = avctx->internal;
-    enum AVColorTransferCharacteristic trc;
-    AVColorPrimariesDesc coeffs;
-    enum AVColorPrimaries prim;
-    cmsHPROFILE profile;
-    AVFrameSideData *sd;
-    int ret;
-    if (!(avctx->flags2 & AV_CODEC_FLAG2_ICC_PROFILES))
-        return 0;
-
-    sd = av_frame_get_side_data(frame, AV_FRAME_DATA_ICC_PROFILE);
-    if (!sd || !sd->size)
-        return 0;
-
-    if (!avci->icc.avctx) {
-        ret = ff_icc_context_init(&avci->icc, avctx);
-        if (ret < 0)
-            return ret;
-    }
-
-    profile = cmsOpenProfileFromMemTHR(avci->icc.ctx, sd->data, sd->size);
-    if (!profile)
-        return AVERROR_INVALIDDATA;
-
-    ret = ff_icc_profile_sanitize(&avci->icc, profile);
-    if (!ret)
-        ret = ff_icc_profile_read_primaries(&avci->icc, profile, &coeffs);
-    if (!ret)
-        ret = ff_icc_profile_detect_transfer(&avci->icc, profile, &trc);
-    cmsCloseProfile(profile);
-    if (ret < 0)
-        return ret;
-
-    prim = av_csp_primaries_id_from_desc(&coeffs);
-    if (prim != AVCOL_PRI_UNSPECIFIED)
-        frame->color_primaries = prim;
-    if (trc != AVCOL_TRC_UNSPECIFIED)
-        frame->color_trc = trc;
-    return 0;
-}
-#else /* !CONFIG_LCMS2 */
 static int detect_colorspace(av_unused AVCodecContext *c, av_unused AVFrame *f)
 {
     return 0;
 }
-#endif
 
 static int fill_frame_props(const AVCodecContext *avctx, AVFrame *frame)
 {
@@ -1663,65 +1610,10 @@ int ff_attach_decode_data(AVFrame *frame)
 
 static void update_frame_props(AVCodecContext *avctx, AVFrame *frame)
 {
-#if CONFIG_LIBLCEVC_DEC
-    AVCodecInternal    *avci = avctx->internal;
-    DecodeContext        *dc = decode_ctx(avci);
-
-    dc->lcevc.frame = dc->lcevc.ctx && avctx->codec_type == AVMEDIA_TYPE_VIDEO &&
-                      av_frame_get_side_data(frame, AV_FRAME_DATA_LCEVC);
-
-    if (dc->lcevc.frame) {
-        dc->lcevc.width  = frame->width;
-        dc->lcevc.height = frame->height;
-        frame->width  = frame->width  * 2 / FFMAX(frame->sample_aspect_ratio.den, 1);
-        frame->height = frame->height * 2 / FFMAX(frame->sample_aspect_ratio.num, 1);
-    }
-#endif
 }
 
 static int attach_post_process_data(AVCodecContext *avctx, AVFrame *frame)
 {
-#if CONFIG_LIBLCEVC_DEC
-    AVCodecInternal    *avci = avctx->internal;
-    DecodeContext        *dc = decode_ctx(avci);
-
-    if (dc->lcevc.frame) {
-        FrameDecodeData *fdd = frame->private_ref;
-        FFLCEVCFrame *frame_ctx;
-        int ret;
-
-        frame_ctx = av_mallocz(sizeof(*frame_ctx));
-        if (!frame_ctx)
-            return AVERROR(ENOMEM);
-
-        frame_ctx->frame = av_frame_alloc();
-        if (!frame_ctx->frame) {
-            av_free(frame_ctx);
-            return AVERROR(ENOMEM);
-        }
-
-        frame_ctx->lcevc = av_refstruct_ref(dc->lcevc.ctx);
-        frame_ctx->frame->width  = frame->width;
-        frame_ctx->frame->height = frame->height;
-        frame_ctx->frame->format = frame->format;
-
-        frame->width  = dc->lcevc.width;
-        frame->height = dc->lcevc.height;
-
-        ret = avctx->get_buffer2(avctx, frame_ctx->frame, 0);
-        if (ret < 0) {
-            ff_lcevc_unref(frame_ctx);
-            return ret;
-        }
-
-        validate_avframe_allocation(avctx, frame_ctx->frame);
-
-        fdd->post_process_opaque = frame_ctx;
-        fdd->post_process_opaque_free = ff_lcevc_unref;
-        fdd->post_process = ff_lcevc_process;
-    }
-    dc->lcevc.frame = 0;
-#endif
 
     return 0;
 }
@@ -2090,11 +1982,6 @@ av_cold int ff_decode_preinit(AVCodecContext *avctx)
 
     if (!(avctx->export_side_data & AV_CODEC_EXPORT_DATA_ENHANCEMENTS)) {
         if (avctx->codec_type == AVMEDIA_TYPE_VIDEO) {
-#if CONFIG_LIBLCEVC_DEC
-            ret = ff_lcevc_alloc(&dc->lcevc.ctx);
-            if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
-                return ret;
-#endif
         }
     }
 
@@ -2336,19 +2223,10 @@ av_cold void ff_decode_internal_sync(AVCodecContext *dst, const AVCodecContext *
     dst_dc->initial_pict_type = src_dc->initial_pict_type;
     dst_dc->intra_only_flag   = src_dc->intra_only_flag;
     dst_dc->side_data_pref_mask = src_dc->side_data_pref_mask;
-#if CONFIG_LIBLCEVC_DEC
-    av_refstruct_replace(&dst_dc->lcevc.ctx, src_dc->lcevc.ctx);
-#endif
 }
 
 av_cold void ff_decode_internal_uninit(AVCodecContext *avctx)
 {
-#if CONFIG_LIBLCEVC_DEC
-    AVCodecInternal *avci = avctx->internal;
-    DecodeContext *dc = decode_ctx(avci);
-
-    av_refstruct_unref(&dc->lcevc.ctx);
-#endif
 }
 
 static int attach_displaymatrix(AVCodecContext *avctx, AVFrame *frame, int orientation)

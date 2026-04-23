@@ -594,89 +594,24 @@ static enum AVPixelFormat get_format(HEVCContext *s, const HEVCSPS *sps)
     switch (sps->pix_fmt) {
     case AV_PIX_FMT_YUV420P:
     case AV_PIX_FMT_YUVJ420P:
-#if CONFIG_HEVC_DXVA2_HWACCEL
-        *fmt++ = AV_PIX_FMT_DXVA2_VLD;
-#endif
-#if CONFIG_HEVC_D3D11VA_HWACCEL
-        *fmt++ = AV_PIX_FMT_D3D11VA_VLD;
-        *fmt++ = AV_PIX_FMT_D3D11;
-#endif
-#if CONFIG_HEVC_D3D12VA_HWACCEL
-        *fmt++ = AV_PIX_FMT_D3D12;
-#endif
-#if CONFIG_HEVC_VAAPI_HWACCEL
-        *fmt++ = AV_PIX_FMT_VAAPI;
-#endif
-#if CONFIG_HEVC_VDPAU_HWACCEL
-        *fmt++ = AV_PIX_FMT_VDPAU;
-#endif
-#if CONFIG_HEVC_NVDEC_HWACCEL
-        *fmt++ = AV_PIX_FMT_CUDA;
-#endif
 #if CONFIG_HEVC_VIDEOTOOLBOX_HWACCEL
         *fmt++ = AV_PIX_FMT_VIDEOTOOLBOX;
-#endif
-#if CONFIG_HEVC_VULKAN_HWACCEL
-        *fmt++ = AV_PIX_FMT_VULKAN;
 #endif
         break;
     case AV_PIX_FMT_YUV420P10:
-#if CONFIG_HEVC_DXVA2_HWACCEL
-        *fmt++ = AV_PIX_FMT_DXVA2_VLD;
-#endif
-#if CONFIG_HEVC_D3D11VA_HWACCEL
-        *fmt++ = AV_PIX_FMT_D3D11VA_VLD;
-        *fmt++ = AV_PIX_FMT_D3D11;
-#endif
-#if CONFIG_HEVC_D3D12VA_HWACCEL
-        *fmt++ = AV_PIX_FMT_D3D12;
-#endif
-#if CONFIG_HEVC_VAAPI_HWACCEL
-        *fmt++ = AV_PIX_FMT_VAAPI;
-#endif
 #if CONFIG_HEVC_VIDEOTOOLBOX_HWACCEL
         *fmt++ = AV_PIX_FMT_VIDEOTOOLBOX;
-#endif
-#if CONFIG_HEVC_VULKAN_HWACCEL
-        *fmt++ = AV_PIX_FMT_VULKAN;
-#endif
-#if CONFIG_HEVC_VDPAU_HWACCEL
-        *fmt++ = AV_PIX_FMT_VDPAU;
-#endif
-#if CONFIG_HEVC_NVDEC_HWACCEL
-        *fmt++ = AV_PIX_FMT_CUDA;
 #endif
         break;
     case AV_PIX_FMT_YUV444P:
-#if CONFIG_HEVC_VAAPI_HWACCEL
-        *fmt++ = AV_PIX_FMT_VAAPI;
-#endif
-#if CONFIG_HEVC_VDPAU_HWACCEL
-        *fmt++ = AV_PIX_FMT_VDPAU;
-#endif
-#if CONFIG_HEVC_NVDEC_HWACCEL
-        *fmt++ = AV_PIX_FMT_CUDA;
-#endif
 #if CONFIG_HEVC_VIDEOTOOLBOX_HWACCEL
         *fmt++ = AV_PIX_FMT_VIDEOTOOLBOX;
-#endif
-#if CONFIG_HEVC_VULKAN_HWACCEL
-        *fmt++ = AV_PIX_FMT_VULKAN;
 #endif
         break;
     case AV_PIX_FMT_YUV422P:
     case AV_PIX_FMT_YUV422P10LE:
-#if CONFIG_HEVC_VAAPI_HWACCEL
-       *fmt++ = AV_PIX_FMT_VAAPI;
-#endif
 #if CONFIG_HEVC_VIDEOTOOLBOX_HWACCEL
         *fmt++ = AV_PIX_FMT_VIDEOTOOLBOX;
-#endif
-#if CONFIG_HEVC_VULKAN_HWACCEL
-        *fmt++ = AV_PIX_FMT_VULKAN;
-#endif
-#if CONFIG_HEVC_NVDEC_HWACCEL
-        *fmt++ = AV_PIX_FMT_CUDA;
 #endif
         break;
     case AV_PIX_FMT_YUV444P10:
@@ -686,29 +621,8 @@ static enum AVPixelFormat get_format(HEVCContext *s, const HEVCSPS *sps)
     /* NOTE: fallthrough */
     case AV_PIX_FMT_YUV420P12:
     case AV_PIX_FMT_YUV444P12:
-#if CONFIG_HEVC_VAAPI_HWACCEL
-       *fmt++ = AV_PIX_FMT_VAAPI;
-#endif
-#if CONFIG_HEVC_VDPAU_HWACCEL
-        *fmt++ = AV_PIX_FMT_VDPAU;
-#endif
-#if CONFIG_HEVC_VULKAN_HWACCEL
-        *fmt++ = AV_PIX_FMT_VULKAN;
-#endif
-#if CONFIG_HEVC_NVDEC_HWACCEL
-        *fmt++ = AV_PIX_FMT_CUDA;
-#endif
         break;
     case AV_PIX_FMT_YUV422P12:
-#if CONFIG_HEVC_VAAPI_HWACCEL
-       *fmt++ = AV_PIX_FMT_VAAPI;
-#endif
-#if CONFIG_HEVC_VULKAN_HWACCEL
-        *fmt++ = AV_PIX_FMT_VULKAN;
-#endif
-#if CONFIG_HEVC_NVDEC_HWACCEL
-        *fmt++ = AV_PIX_FMT_CUDA;
-#endif
         break;
     }
 
@@ -4254,32 +4168,8 @@ const FFCodec ff_hevc_decoder = {
                              FF_CODEC_CAP_INIT_CLEANUP,
     .p.profiles            = NULL_IF_CONFIG_SMALL(ff_hevc_profiles),
     .hw_configs            = (const AVCodecHWConfigInternal *const []) {
-#if CONFIG_HEVC_DXVA2_HWACCEL
-                               HWACCEL_DXVA2(hevc),
-#endif
-#if CONFIG_HEVC_D3D11VA_HWACCEL
-                               HWACCEL_D3D11VA(hevc),
-#endif
-#if CONFIG_HEVC_D3D11VA2_HWACCEL
-                               HWACCEL_D3D11VA2(hevc),
-#endif
-#if CONFIG_HEVC_D3D12VA_HWACCEL
-                               HWACCEL_D3D12VA(hevc),
-#endif
-#if CONFIG_HEVC_NVDEC_HWACCEL
-                               HWACCEL_NVDEC(hevc),
-#endif
-#if CONFIG_HEVC_VAAPI_HWACCEL
-                               HWACCEL_VAAPI(hevc),
-#endif
-#if CONFIG_HEVC_VDPAU_HWACCEL
-                               HWACCEL_VDPAU(hevc),
-#endif
 #if CONFIG_HEVC_VIDEOTOOLBOX_HWACCEL
                                HWACCEL_VIDEOTOOLBOX(hevc),
-#endif
-#if CONFIG_HEVC_VULKAN_HWACCEL
-                               HWACCEL_VULKAN(hevc),
 #endif
                                NULL
                            },

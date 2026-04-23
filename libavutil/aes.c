@@ -45,13 +45,8 @@ static const uint8_t rcon[10] = {
 
 static uint8_t     sbox[256];
 static uint8_t inv_sbox[256];
-#if CONFIG_SMALL
-static uint32_t enc_multbl[1][256];
-static uint32_t dec_multbl[1][256];
-#else
 static uint32_t enc_multbl[4][256];
 static uint32_t dec_multbl[4][256];
-#endif
 
 #if HAVE_BIGENDIAN
 #   define ROT(x, s) (((x) >> (s)) | ((x) << (32-(s))))
@@ -107,11 +102,7 @@ static void subshift(av_aes_block s0[2], int s, const uint8_t *box)
 
 static inline int mix_core(uint32_t multbl[][256], int a, int b, int c, int d)
 {
-#if CONFIG_SMALL
-    return multbl[0][a] ^ ROT(multbl[0][b], 8) ^ ROT(multbl[0][c], 16) ^ ROT(multbl[0][d], 24);
-#else
     return multbl[0][a] ^ multbl[1][b] ^ multbl[2][c] ^ multbl[3][d];
-#endif
 }
 
 static inline void mix(av_aes_block state[2], uint32_t multbl[][256], int s1, int s3)

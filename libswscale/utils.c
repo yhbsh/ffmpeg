@@ -64,9 +64,6 @@
 #include "swscale_internal.h"
 #include "graph.h"
 
-#if CONFIG_VULKAN
-#include "vulkan/ops.h"
-#endif
 
 /**
  * Allocate and return an SwsContext without performing initialization.
@@ -706,14 +703,9 @@ static void fill_rgb2yuv_table(SwsInternal *c, const int table[4], int dstRange)
         AV_WL16(p + 16*4 + 2*i, map[i] >= 0 ? c->input_rgb2yuv_table[map[i]] : 0);
 }
 
-#if CONFIG_SMALL
-static void init_xyz_tables(uint16_t xyzgamma_tab[4096],  uint16_t xyzgammainv_tab[65536],
-                            uint16_t rgbgamma_tab[65536], uint16_t rgbgammainv_tab[4096])
-#else
 static uint16_t xyzgamma_tab[4096],  rgbgammainv_tab[4096];
 static uint16_t rgbgamma_tab[65536], xyzgammainv_tab[65536];
 static av_cold void init_xyz_tables(void)
-#endif
 {
     double xyzgamma    = XYZ_GAMMA;
     double rgbgamma    = 1.0 / RGB_GAMMA;
@@ -750,16 +742,6 @@ av_cold int ff_sws_fill_xyztables(SwsInternal *c)
     memcpy(c->xyz2rgb.mat, xyz2rgb_matrix, sizeof(c->xyz2rgb.mat));
     memcpy(c->rgb2xyz.mat, rgb2xyz_matrix, sizeof(c->rgb2xyz.mat));
 
-#if CONFIG_SMALL
-    c->xyz2rgb.gamma.in = av_malloc(sizeof(uint16_t) * 2 * (4096 + 65536));
-    if (!c->xyz2rgb.gamma.in)
-        return AVERROR(ENOMEM);
-    c->rgb2xyz.gamma.in  = c->xyz2rgb.gamma.in  + 4096;
-    c->xyz2rgb.gamma.out = c->rgb2xyz.gamma.in  + 4096;
-    c->rgb2xyz.gamma.out = c->xyz2rgb.gamma.out + 65536;
-    init_xyz_tables(c->xyz2rgb.gamma.in,  c->rgb2xyz.gamma.out,
-                    c->xyz2rgb.gamma.out, c->rgb2xyz.gamma.in);
-#else
     c->xyz2rgb.gamma.in  = xyzgamma_tab;
     c->xyz2rgb.gamma.out = rgbgamma_tab;
     c->rgb2xyz.gamma.in  = rgbgammainv_tab;
@@ -767,7 +749,6 @@ av_cold int ff_sws_fill_xyztables(SwsInternal *c)
 
     static AVOnce xyz_init_static_once = AV_ONCE_INIT;
     ff_thread_once(&xyz_init_static_once, init_xyz_tables);
-#endif
     return 0;
 }
 
@@ -2331,9 +2312,6 @@ void sws_freeContext(SwsContext *sws)
 
     av_freep(&c->gamma);
     av_freep(&c->inv_gamma);
-#if CONFIG_SMALL
-    av_freep(&c->xyz2rgb.gamma.in);
-#endif
 
     av_freep(&c->rgb0_scratch);
     av_freep(&c->xyz_scratch);

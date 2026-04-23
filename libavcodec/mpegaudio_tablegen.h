@@ -27,10 +27,6 @@
 #include <math.h>
 #include "libavutil/attributes.h"
 
-#if CONFIG_HARDCODED_TABLES
-#define mpegaudio_tableinit()
-#include "libavcodec/mpegaudio_tables.h"
-#else
 #if defined(BUILD_TABLES) || !USE_FLOATS
 #define FIXED_TABLE
 static uint32_t exp_table_fixed[512];
@@ -84,6 +80,5 @@ static av_cold void mpegaudio_tableinit(void)
 }
 #undef FLOAT_TABLE
 #undef FIXED_TABLE
-#endif /* CONFIG_HARDCODED_TABLES */
 
 #endif /* AVCODEC_MPEGAUDIO_TABLEGEN_H */

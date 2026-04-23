@@ -666,64 +666,10 @@ static int bmp_probe(const AVProbeData *p)
     return AVPROBE_SCORE_EXTENSION / 4;
 }
 
-static int cri_probe(const AVProbeData *p)
-{
-    const uint8_t *b = p->buf;
 
-    if (   AV_RL32(b) == 1
-        && AV_RL32(b + 4) == 4
-        && AV_RN32(b + 8) == AV_RN32("DVCC"))
-        return AVPROBE_SCORE_MAX - 1;
-    return 0;
-}
 
-static int dds_probe(const AVProbeData *p)
-{
-    const uint8_t *b = p->buf;
 
-    if (   AV_RB64(b) == 0x444453207c000000
-        && AV_RL32(b +  8)
-        && AV_RL32(b + 12))
-        return AVPROBE_SCORE_MAX - 1;
-    return 0;
-}
 
-static int dpx_probe(const AVProbeData *p)
-{
-    const uint8_t *b = p->buf;
-    int w, h;
-    int is_big = (AV_RN32(b) == AV_RN32("SDPX"));
-
-    if (p->buf_size < 0x304+8)
-        return 0;
-    w = is_big ? AV_RB32(p->buf + 0x304) : AV_RL32(p->buf + 0x304);
-    h = is_big ? AV_RB32(p->buf + 0x308) : AV_RL32(p->buf + 0x308);
-    if (w <= 0 || h <= 0)
-        return 0;
-
-    if (is_big || AV_RN32(b) == AV_RN32("XPDS"))
-        return AVPROBE_SCORE_EXTENSION + 1;
-    return 0;
-}
-
-static int exr_probe(const AVProbeData *p)
-{
-    const uint8_t *b = p->buf;
-
-    if (AV_RL32(b) == 20000630)
-        return AVPROBE_SCORE_EXTENSION + 1;
-    return 0;
-}
-
-static int j2k_probe(const AVProbeData *p)
-{
-    const uint8_t *b = p->buf;
-
-    if (AV_RB64(b) == 0x0000000c6a502020 ||
-        AV_RB32(b) == 0xff4fff51)
-        return AVPROBE_SCORE_EXTENSION + 1;
-    return 0;
-}
 
 static int jpeg_probe(const AVProbeData *p)
 {
@@ -806,87 +752,11 @@ static int jpeg_probe(const AVProbeData *p)
     return AVPROBE_SCORE_EXTENSION / 8 + 1;
 }
 
-static int jpegls_probe(const AVProbeData *p)
-{
-    const uint8_t *b = p->buf;
 
-    if (AV_RB32(b) == 0xffd8fff7)
-         return AVPROBE_SCORE_EXTENSION + 1;
-    return 0;
-}
 
-static int jpegxl_probe(const AVProbeData *p)
-{
-    const uint8_t *b = p->buf;
 
-    /* ISOBMFF-based container */
-    /* 0x4a584c20 == "JXL " */
-    if (AV_RL64(b) == FF_JPEGXL_CONTAINER_SIGNATURE_LE)
-        return AVPROBE_SCORE_EXTENSION + 1;
-    /* Raw codestreams all start with 0xff0a */
-    if (AV_RL16(b) != FF_JPEGXL_CODESTREAM_SIGNATURE_LE)
-        return 0;
-#if CONFIG_IMAGE_JPEGXL_PIPE_DEMUXER
-    if (ff_jpegxl_parse_codestream_header(p->buf, p->buf_size, NULL, 5) >= 0)
-        return AVPROBE_SCORE_MAX - 2;
-#endif
-    return 0;
-}
 
-static int jpegxs_probe(const AVProbeData *p)
-{
-    const uint8_t *b = p->buf;
 
-    if (AV_RB32(b) == 0xff10ff50)
-         return AVPROBE_SCORE_EXTENSION + 1;
-    return 0;
-}
-
-static int pcx_probe(const AVProbeData *p)
-{
-    const uint8_t *b = p->buf;
-
-    if (   p->buf_size < 128
-        || b[0] != 10
-        || b[1] > 5
-        || b[2] > 1
-        || av_popcount(b[3]) != 1 || b[3] > 8
-        || AV_RL16(&b[4]) > AV_RL16(&b[8])
-        || AV_RL16(&b[6]) > AV_RL16(&b[10])
-        || b[64])
-        return 0;
-    b += 73;
-    while (++b < p->buf + 128)
-        if (*b)
-            return AVPROBE_SCORE_EXTENSION / 4;
-
-    return AVPROBE_SCORE_EXTENSION + 1;
-}
-
-static int qdraw_probe(const AVProbeData *p)
-{
-    const uint8_t *b = p->buf;
-
-    if (   p->buf_size >= 528
-        && (AV_RB64(b + 520) & 0xFFFFFFFFFFFF) == 0x001102ff0c00
-        && AV_RB16(b + 520)
-        && AV_RB16(b + 518))
-        return AVPROBE_SCORE_MAX * 3 / 4;
-    if (   (AV_RB64(b + 8) & 0xFFFFFFFFFFFF) == 0x001102ff0c00
-        && AV_RB16(b + 8)
-        && AV_RB16(b + 6))
-        return AVPROBE_SCORE_EXTENSION / 4;
-    return 0;
-}
-
-static int pictor_probe(const AVProbeData *p)
-{
-    const uint8_t *b = p->buf;
-
-    if (AV_RL16(b) == 0x1234)
-        return AVPROBE_SCORE_EXTENSION / 4;
-    return 0;
-}
 
 static int png_probe(const AVProbeData *p)
 {
@@ -897,79 +767,9 @@ static int png_probe(const AVProbeData *p)
     return 0;
 }
 
-static int psd_probe(const AVProbeData *p)
-{
-    const uint8_t *b = p->buf;
-    int ret = 0;
-    uint16_t color_mode;
 
-    if (AV_RL32(b) == MKTAG('8','B','P','S')) {
-        ret += 1;
-    } else {
-        return 0;
-    }
 
-    if ((b[4] == 0) && (b[5] == 1)) {/* version 1 is PSD, version 2 is PSB */
-        ret += 1;
-    } else {
-        return 0;
-    }
 
-    if ((AV_RL32(b+6) == 0) && (AV_RL16(b+10) == 0))/* reserved must be 0 */
-        ret += 1;
-
-    color_mode = AV_RB16(b+24);
-    if ((color_mode <= 9) && (color_mode != 5) && (color_mode != 6))
-        ret += 1;
-
-    return AVPROBE_SCORE_EXTENSION + ret;
-}
-
-static int sgi_probe(const AVProbeData *p)
-{
-    const uint8_t *b = p->buf;
-
-    if (AV_RB16(b) == 474 &&
-        (b[2] & ~1) == 0 &&
-        (b[3] & ~3) == 0 && b[3] &&
-        (AV_RB16(b + 4) & ~7) == 0 && AV_RB16(b + 4))
-        return AVPROBE_SCORE_EXTENSION + 1;
-    return 0;
-}
-
-static int sunrast_probe(const AVProbeData *p)
-{
-    const uint8_t *b = p->buf;
-
-    if (AV_RB32(b) == 0x59a66a95)
-        return AVPROBE_SCORE_EXTENSION + 1;
-    return 0;
-}
-
-static int svg_probe(const AVProbeData *p)
-{
-    const uint8_t *b = p->buf;
-    const uint8_t *end = p->buf + p->buf_size;
-    while (b < end && av_isspace(*b))
-        b++;
-    if (b >= end - 5)
-        return 0;
-    if (!memcmp(b, "<svg", 4))
-        return AVPROBE_SCORE_EXTENSION + 1;
-    if (memcmp(p->buf, "<?xml", 5) && memcmp(b, "<!--", 4))
-        return 0;
-    while (b < end) {
-        int inc = ff_subtitles_next_line(b);
-        if (!inc)
-            break;
-        b += inc;
-        if (b >= end - 4)
-            return 0;
-        if (!memcmp(b, "<svg", 4))
-            return AVPROBE_SCORE_EXTENSION + 1;
-    }
-    return 0;
-}
 
 static int tiff_probe(const AVProbeData *p)
 {
@@ -1009,113 +809,22 @@ static inline int pnm_probe(const AVProbeData *p)
     return 0;
 }
 
-static int pbm_probe(const AVProbeData *p)
-{
-    return pnm_magic_check(p, 1) || pnm_magic_check(p, 4) ? pnm_probe(p) : 0;
-}
 
-static int pfm_probe(const AVProbeData *p)
-{
-    return pnm_magic_check(p, 'F' - '0') ||
-           pnm_magic_check(p, 'f' - '0') ? pnm_probe(p) : 0;
-}
 
-static int phm_probe(const AVProbeData *p)
-{
-    return pnm_magic_check(p, 'H' - '0') ||
-           pnm_magic_check(p, 'h' - '0') ? pnm_probe(p) : 0;
-}
 
 static inline int pgmx_probe(const AVProbeData *p)
 {
     return pnm_magic_check(p, 2) || pnm_magic_check(p, 5) ? pnm_probe(p) : 0;
 }
 
-static int pgm_probe(const AVProbeData *p)
-{
-    int ret = pgmx_probe(p);
-    return ret && !av_match_ext(p->filename, "pgmyuv") ? ret : 0;
-}
 
-static int pgmyuv_probe(const AVProbeData *p) // custom FFmpeg format recognized by file extension
-{
-    int ret = pgmx_probe(p);
-    return ret && av_match_ext(p->filename, "pgmyuv") ? ret : 0;
-}
 
-static int pgx_probe(const AVProbeData *p)
-{
-    const uint8_t *b = p->buf;
-    if (!memcmp(b, "PG ML ", 6))
-        return AVPROBE_SCORE_EXTENSION + 1;
-    return 0;
-}
 
-static int ppm_probe(const AVProbeData *p)
-{
-    return pnm_magic_check(p, 3) || pnm_magic_check(p, 6) ? pnm_probe(p) : 0;
-}
 
-static int pam_probe(const AVProbeData *p)
-{
-    return pnm_magic_check(p, 7) ? pnm_probe(p) : 0;
-}
 
-static int hdr_probe(const AVProbeData *p)
-{
-    if (!memcmp(p->buf, "#?RADIANCE\n", 11))
-        return AVPROBE_SCORE_MAX;
-    return 0;
-}
 
-static int xbm_probe(const AVProbeData *p)
-{
-    if (!memcmp(p->buf, "/* XBM X10 format */", 20))
-        return AVPROBE_SCORE_MAX;
 
-    if (!memcmp(p->buf, "#define", 7))
-        return AVPROBE_SCORE_MAX - 1;
-    return 0;
-}
 
-static int xpm_probe(const AVProbeData *p)
-{
-    const uint8_t *b = p->buf;
-
-    if (AV_RB64(b) == 0x2f2a2058504d202a && *(b+8) == '/')
-        return AVPROBE_SCORE_MAX - 1;
-    return 0;
-}
-
-static int xwd_probe(const AVProbeData *p)
-{
-    const uint8_t *b = p->buf;
-    unsigned width, bpp, bpad, lsize;
-
-    if (   p->buf_size < XWD_HEADER_SIZE
-        || AV_RB32(b     ) < XWD_HEADER_SIZE                          // header size
-        || AV_RB32(b +  4) != XWD_VERSION                             // version
-        || AV_RB32(b +  8) != XWD_Z_PIXMAP                            // format
-        || AV_RB32(b + 12) > 32 || !AV_RB32(b + 12)                   // depth
-        || AV_RB32(b + 16) == 0                                       // width
-        || AV_RB32(b + 20) == 0                                       // height
-        || AV_RB32(b + 28) > 1                                        // byteorder
-        || AV_RB32(b + 32) & ~56 || av_popcount(AV_RB32(b + 32)) != 1 // bitmap unit
-        || AV_RB32(b + 36) > 1                                        // bitorder
-        || AV_RB32(b + 40) & ~56 || av_popcount(AV_RB32(b + 40)) != 1 // padding
-        || AV_RB32(b + 44) > 32 || !AV_RB32(b + 44)                   // bpp
-        || AV_RB32(b + 68) > 256)                                     // colours
-        return 0;
-
-    width = AV_RB32(b + 16);
-    bpad  = AV_RB32(b + 40);
-    bpp   = AV_RB32(b + 44);
-    lsize = AV_RB32(b + 48);
-    if (lsize < FFALIGN(width * bpp, bpad) >> 3)
-        return 0;
-
-    return AVPROBE_SCORE_MAX / 2 + 1;
-}
 
 static int gif_probe(const AVProbeData *p)
 {
@@ -1130,63 +839,9 @@ static int gif_probe(const AVProbeData *p)
     return AVPROBE_SCORE_MAX - 1;
 }
 
-static int photocd_probe(const AVProbeData *p)
-{
-    if (!memcmp(p->buf, "PCD_OPA", 7))
-        return AVPROBE_SCORE_MAX - 1;
 
-    if (p->buf_size < 0x807 || memcmp(p->buf + 0x800, "PCD_IPI", 7))
-        return 0;
 
-    return AVPROBE_SCORE_MAX - 1;
-}
 
-static int qoi_probe(const AVProbeData *p)
-{
-    if (memcmp(p->buf, "qoif", 4))
-        return 0;
-
-    if (AV_RB32(p->buf + 4) == 0 || AV_RB32(p->buf + 8) == 0)
-        return 0;
-
-    if (p->buf[12] != 3 && p->buf[12] != 4)
-        return 0;
-
-    if (p->buf[13] > 1)
-        return 0;
-
-    return AVPROBE_SCORE_MAX - 1;
-}
-
-static int gem_probe(const AVProbeData *p)
-{
-    const uint8_t *b = p->buf;
-    if ( AV_RB16(b     ) >= 1 && AV_RB16(b    ) <= 3  &&
-         AV_RB16(b +  2) >= 8 && AV_RB16(b + 2) <= 779 &&
-        (AV_RB16(b +  4) > 0  && AV_RB16(b + 4) <= 32) && /* planes */
-        (AV_RB16(b +  6) > 0  && AV_RB16(b + 6) <= 8) && /* pattern_size */
-         AV_RB16(b +  8) &&
-         AV_RB16(b + 10) &&
-         AV_RB16(b + 12) &&
-         AV_RB16(b + 14)) {
-        if (AV_RN32(b + 16) == AV_RN32("STTT") ||
-            AV_RN32(b + 16) == AV_RN32("TIMG") ||
-            AV_RN32(b + 16) == AV_RN32("XIMG"))
-            return AVPROBE_SCORE_EXTENSION + 1;
-        return AVPROBE_SCORE_EXTENSION / 4;
-    }
-    return 0;
-}
-
-static int vbn_probe(const AVProbeData *p)
-{
-    const uint8_t *b = p->buf;
-    if (AV_RL32(b    ) == VBN_MAGIC &&
-        AV_RL32(b + 4) == VBN_MAJOR &&
-        AV_RL32(b + 8) == VBN_MINOR)
-        return AVPROBE_SCORE_MAX - 1;
-    return 0;
-}
 
 #define IMAGEAUTO_DEMUXER_0(imgname, codecid)
 #define IMAGEAUTO_DEMUXER_1(imgname, codecid)\

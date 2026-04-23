@@ -26,11 +26,6 @@
 #include <math.h>
 #include <stdint.h>
 
-#if CONFIG_HARDCODED_TABLES
-#define ps_tableinit()
-#define TABLE_CONST const
-#include "libavcodec/aacps_tables.h"
-#else
 #include "libavutil/common.h"
 #include "libavutil/libm.h"
 #include "libavutil/mathematics.h"
@@ -212,6 +207,5 @@ static av_cold void ps_tableinit(void)
     make_filters_from_proto(f34_1_8,  g1_Q8,   8);
     make_filters_from_proto(f34_2_4,  g2_Q4,   4);
 }
-#endif /* CONFIG_HARDCODED_TABLES */
 
 #endif /* AVCODEC_AACPS_TABLEGEN_H */

@@ -80,28 +80,7 @@ static av_cold int ulaw2linear(unsigned char u_val)
 }
 #endif
 
-#if CONFIG_PCM_VIDC_DECODER || CONFIG_PCM_VIDC_ENCODER
-static av_cold int vidc2linear(unsigned char u_val)
-{
-    int t;
 
-    /*
-     * Extract and bias the quantization bits. Then
-     * shift up by the segment number and subtract out the bias.
-     */
-    t = (((u_val & VIDC_QUANT_MASK) >> VIDC_QUANT_SHIFT) << 3) + BIAS;
-    t <<= ((unsigned)u_val & VIDC_SEG_MASK) >> VIDC_SEG_SHIFT;
-
-    return (u_val & VIDC_SIGN_BIT) ? (BIAS - t) : (t - BIAS);
-}
-#endif
-
-#if CONFIG_HARDCODED_TABLES
-#define pcm_alaw_tableinit()
-#define pcm_ulaw_tableinit()
-#define pcm_vidc_tableinit()
-#include "libavcodec/pcm_tables.h"
-#else
 
 #if CONFIG_PCM_ALAW_ENCODER  || CONFIG_PCM_MULAW_ENCODER || \
     CONFIG_PCM_VIDC_ENCODER
@@ -153,6 +132,5 @@ static void pcm_vidc_tableinit(void)
     build_xlaw_table(linear_to_vidc, vidc2linear, 0xff);
 }
 #endif
-#endif /* CONFIG_HARDCODED_TABLES */
 
 #endif /* AVCODEC_PCM_TABLEGEN_H */

@@ -179,12 +179,6 @@ static VP8Frame *vp8_find_free_buffer(VP8Context *s)
 static enum AVPixelFormat get_pixel_format(VP8Context *s)
 {
     enum AVPixelFormat pix_fmts[] = {
-#if CONFIG_VP8_VAAPI_HWACCEL
-        AV_PIX_FMT_VAAPI,
-#endif
-#if CONFIG_VP8_NVDEC_HWACCEL
-        AV_PIX_FMT_CUDA,
-#endif
         AV_PIX_FMT_YUV420P,
         AV_PIX_FMT_NONE,
     };
@@ -2907,52 +2901,6 @@ static int vp8_decode_update_thread_context(AVCodecContext *dst,
 #endif /* HAVE_THREADS */
 #endif /* CONFIG_VP8_DECODER */
 
-#if CONFIG_VP7_DECODER
-static int vp7_decode_mb_row_no_filter(AVCodecContext *avctx, void *tdata,
-                                        int jobnr, int threadnr)
-{
-    return decode_mb_row_no_filter(avctx, tdata, jobnr, threadnr, 1);
-}
-
-static void vp7_filter_mb_row(AVCodecContext *avctx, void *tdata,
-                              int jobnr, int threadnr)
-{
-    filter_mb_row(avctx, tdata, jobnr, threadnr, 1);
-}
-
-static int vp7_decode_frame(AVCodecContext *avctx, AVFrame *frame,
-                            int *got_frame, AVPacket *avpkt)
-{
-    return vp78_decode_frame(avctx, frame, got_frame, avpkt, IS_VP7);
-}
-
-av_cold static int vp7_decode_init(AVCodecContext *avctx)
-{
-    VP8Context *s = avctx->priv_data;
-
-    vp78_decode_init(avctx);
-    ff_h264_pred_init(&s->hpc, AV_CODEC_ID_VP7, 8, 1);
-    ff_vp7dsp_init(&s->vp8dsp);
-    s->decode_mb_row_no_filter = vp7_decode_mb_row_no_filter;
-    s->filter_mb_row           = vp7_filter_mb_row;
-
-    return 0;
-}
-
-const FFCodec ff_vp7_decoder = {
-    .p.name                = "vp7",
-    CODEC_LONG_NAME("On2 VP7"),
-    .p.type                = AVMEDIA_TYPE_VIDEO,
-    .p.id                  = AV_CODEC_ID_VP7,
-    .priv_data_size        = sizeof(VP8Context),
-    .init                  = vp7_decode_init,
-    .close                 = ff_vp8_decode_free,
-    FF_CODEC_DECODE_CB(vp7_decode_frame),
-    .p.capabilities        = AV_CODEC_CAP_DR1,
-    .flush                 = vp8_decode_flush,
-    .caps_internal         = FF_CODEC_CAP_USES_PROGRESSFRAMES,
-};
-#endif /* CONFIG_VP7_DECODER */
 
 #if CONFIG_VP8_DECODER
 const FFCodec ff_vp8_decoder = {
@@ -2970,12 +2918,6 @@ const FFCodec ff_vp8_decoder = {
     .flush                 = vp8_decode_flush,
     UPDATE_THREAD_CONTEXT(vp8_decode_update_thread_context),
     .hw_configs            = (const AVCodecHWConfigInternal *const []) {
-#if CONFIG_VP8_VAAPI_HWACCEL
-                               HWACCEL_VAAPI(vp8),
-#endif
-#if CONFIG_VP8_NVDEC_HWACCEL
-                               HWACCEL_NVDEC(vp8),
-#endif
                                NULL
                            },
 };

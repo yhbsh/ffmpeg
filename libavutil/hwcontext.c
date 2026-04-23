@@ -30,47 +30,8 @@
 #include "pixfmt.h"
 
 static const HWContextType * const hw_table[] = {
-#if CONFIG_CUDA
-    &ff_hwcontext_type_cuda,
-#endif
-#if CONFIG_D3D11VA
-    &ff_hwcontext_type_d3d11va,
-#endif
-#if CONFIG_D3D12VA
-    &ff_hwcontext_type_d3d12va,
-#endif
-#if CONFIG_LIBDRM
-    &ff_hwcontext_type_drm,
-#endif
-#if CONFIG_DXVA2
-    &ff_hwcontext_type_dxva2,
-#endif
-#if CONFIG_OPENCL
-    &ff_hwcontext_type_opencl,
-#endif
-#if CONFIG_QSV
-    &ff_hwcontext_type_qsv,
-#endif
-#if CONFIG_VAAPI
-    &ff_hwcontext_type_vaapi,
-#endif
-#if CONFIG_VDPAU
-    &ff_hwcontext_type_vdpau,
-#endif
 #if CONFIG_VIDEOTOOLBOX
     &ff_hwcontext_type_videotoolbox,
-#endif
-#if CONFIG_MEDIACODEC
-    &ff_hwcontext_type_mediacodec,
-#endif
-#if CONFIG_VULKAN
-    &ff_hwcontext_type_vulkan,
-#endif
-#if CONFIG_AMF
-    &ff_hwcontext_type_amf,
-#endif
-#if CONFIG_OHCODEC
-    &ff_hwcontext_type_oh,
 #endif
     NULL,
 };

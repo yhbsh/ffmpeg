@@ -88,19 +88,6 @@ static int srt_decode_frame(AVCodecContext *avctx, AVSubtitle *sub,
     return avpkt->size;
 }
 
-#if CONFIG_SRT_DECODER
-/* deprecated decoder */
-const FFCodec ff_srt_decoder = {
-    .p.name       = "srt",
-    CODEC_LONG_NAME("SubRip subtitle"),
-    .p.type       = AVMEDIA_TYPE_SUBTITLE,
-    .p.id         = AV_CODEC_ID_SUBRIP,
-    .init         = ff_ass_subtitle_header_default,
-    FF_CODEC_DECODE_SUB_CB(srt_decode_frame),
-    .flush        = ff_ass_decoder_flush,
-    .priv_data_size = sizeof(FFASSDecoderContext),
-};
-#endif
 
 #if CONFIG_SUBRIP_DECODER
 const FFCodec ff_subrip_decoder = {

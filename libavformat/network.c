@@ -36,9 +36,6 @@
 int ff_tls_init(void)
 {
 #if CONFIG_TLS_PROTOCOL
-#if CONFIG_GNUTLS
-    ff_gnutls_init();
-#endif
 #endif
     return 0;
 }
@@ -46,9 +43,6 @@ int ff_tls_init(void)
 void ff_tls_deinit(void)
 {
 #if CONFIG_TLS_PROTOCOL
-#if CONFIG_GNUTLS
-    ff_gnutls_deinit();
-#endif
 #endif
 }
 

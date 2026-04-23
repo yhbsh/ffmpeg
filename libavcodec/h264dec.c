@@ -1118,32 +1118,8 @@ const FFCodec ff_h264_decoder = {
                              AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS |
                              AV_CODEC_CAP_FRAME_THREADS,
     .hw_configs            = (const AVCodecHWConfigInternal *const []) {
-#if CONFIG_H264_DXVA2_HWACCEL
-                               HWACCEL_DXVA2(h264),
-#endif
-#if CONFIG_H264_D3D11VA_HWACCEL
-                               HWACCEL_D3D11VA(h264),
-#endif
-#if CONFIG_H264_D3D11VA2_HWACCEL
-                               HWACCEL_D3D11VA2(h264),
-#endif
-#if CONFIG_H264_D3D12VA_HWACCEL
-                               HWACCEL_D3D12VA(h264),
-#endif
-#if CONFIG_H264_NVDEC_HWACCEL
-                               HWACCEL_NVDEC(h264),
-#endif
-#if CONFIG_H264_VAAPI_HWACCEL
-                               HWACCEL_VAAPI(h264),
-#endif
-#if CONFIG_H264_VDPAU_HWACCEL
-                               HWACCEL_VDPAU(h264),
-#endif
 #if CONFIG_H264_VIDEOTOOLBOX_HWACCEL
                                HWACCEL_VIDEOTOOLBOX(h264),
-#endif
-#if CONFIG_H264_VULKAN_HWACCEL
-                               HWACCEL_VULKAN(h264),
 #endif
                                NULL
                            },
