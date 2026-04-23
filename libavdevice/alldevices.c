@@ -27,38 +27,10 @@
 
 FF_VISIBILITY_PUSH_HIDDEN
 /* devices */
-extern const FFInputFormat  ff_alsa_demuxer;
-extern const FFOutputFormat ff_alsa_muxer;
 extern const FFInputFormat  ff_android_camera_demuxer;
 extern const FFOutputFormat ff_audiotoolbox_muxer;
 extern const FFInputFormat  ff_avfoundation_demuxer;
-extern const FFOutputFormat ff_caca_muxer;
-extern const FFInputFormat  ff_decklink_demuxer;
-extern const FFOutputFormat ff_decklink_muxer;
-extern const FFInputFormat  ff_dshow_demuxer;
-extern const FFInputFormat  ff_fbdev_demuxer;
-extern const FFOutputFormat ff_fbdev_muxer;
-extern const FFInputFormat  ff_gdigrab_demuxer;
-extern const FFInputFormat  ff_iec61883_demuxer;
-extern const FFInputFormat  ff_jack_demuxer;
-extern const FFInputFormat  ff_kmsgrab_demuxer;
 extern const FFInputFormat  ff_lavfi_demuxer;
-extern const FFInputFormat  ff_openal_demuxer;
-extern const FFInputFormat  ff_oss_demuxer;
-extern const FFOutputFormat ff_oss_muxer;
-extern const FFInputFormat  ff_pulse_demuxer;
-extern const FFOutputFormat ff_pulse_muxer;
-extern const FFInputFormat  ff_sndio_demuxer;
-extern const FFOutputFormat ff_sndio_muxer;
-extern const FFInputFormat  ff_v4l2_demuxer;
-extern const FFOutputFormat ff_v4l2_muxer;
-extern const FFInputFormat  ff_vfwcap_demuxer;
-extern const FFInputFormat  ff_xcbgrab_demuxer;
-extern const FFOutputFormat ff_xv_muxer;
-
-/* external libraries */
-extern const FFInputFormat  ff_libcdio_demuxer;
-extern const FFInputFormat  ff_libdc1394_demuxer;
 FF_VISIBILITY_POP_HIDDEN
 
 #include "libavdevice/outdev_list.c"
