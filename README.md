@@ -8,27 +8,47 @@ ALAC, PCM) and the SMP/SRT/RTMP protocol stack.
 
 ```sh
 clang -O2 -o build build.c
-./build               # defaults to macos-arm64
-./build -j14          # use 14 parallel workers
-./build -v            # verbose (print every command)
+./build              # default: macos-arm64
+./build -j14         # 14 parallel workers
+./build -v           # verbose (print every command)
+./build clean        # remove all artifacts
+./build ios-arm64    # see caveats below
+./build android-arm64
 ```
 
-Produces `ffmpeg`, `ffprobe`, and `ffplay` in the repo root plus per-library
-`.a` archives.
+Produces `ffmpeg`, `ffprobe`, `ffplay` in the repo root plus per-library `.a`
+archives. Clean build on an M-series Mac: ~25s with 14 workers.
 
-### Dependencies
+### Dependencies (macOS)
 
-- clang (or any C compiler in `CC`)
-- openssl (required by native SRT)
-- SDL2 (for ffplay; skip by editing `build.c` and setting `build_ffplay=false`)
+- clang (Xcode command-line tools)
+- openssl — homebrew `openssl@3` (for native SRT)
+- SDL2 — for ffplay (drop `build_ffplay` in the target if unwanted)
+
+### Cross-compile caveats
+
+`config.h` and `config_components.h` are currently frozen for macOS arm64
+(`ARCH_AARCH64=1`, macOS-specific `HAVE_*` values). To build for Android or
+iOS you need target-specific replacements — run upstream FFmpeg's configure
+on the right toolchain to regenerate, then swap the header in.
+
+The Android and iOS targets in `build.c` are wired up with the correct
+compiler paths and link flags; they just can't compile until a matching
+`config.h` is in place.
+
+Openssl locations are hardcoded in `build.c` under `OPENSSL_MACOS`,
+`OPENSSL_ANDROID`, and `ANDROID_NDK` — adjust for your machine.
 
 ## Layout
 
-- `build.c` — single-file build driver. Replaces autoconf + Make.
-- `build_srcs.h` — generated per-library source lists.
-- `config.h`, `config_components.h`, `libavutil/avconfig.h` — frozen
-  configuration for the mainstream codec/format/protocol set.
+- `build.c`, `build_srcs.h` — build driver + generated source lists.
+- `config.h`, `config_components.h`, `libavutil/avconfig.h`,
+  `libavutil/ffversion.h` — frozen configuration.
+- `libavcodec/codec_list.c`, `libavformat/muxer_list.c`, etc. — frozen
+  registry files listing the enabled components.
 - `libav*/`, `libsw*/`, `fftools/` — FFmpeg sources.
+- `compat/` — minimal platform shims (Android, atomics, dispatch_semaphore,
+  float, stdbit, va_copy).
 
 ## License
 

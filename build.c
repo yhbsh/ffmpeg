@@ -43,6 +43,12 @@ struct target {
     bool build_objc;            /* .m files (AVFoundation) */
 };
 
+/* Paths you may need to adjust for your machine. */
+#define OPENSSL_MACOS    "/opt/homebrew/Cellar/openssl@3/3.6.2"
+#define OPENSSL_ANDROID  "/Users/home/.local/android/arm64-v8a"
+#define ANDROID_NDK      "/Users/home/Library/Android/sdk/ndk/29.0.14033849"
+#define ANDROID_API      "21"
+
 static const struct target targets[] = {
     {
         .name = "macos-arm64",
@@ -50,10 +56,10 @@ static const struct target targets[] = {
         .ar = "ar",
         .strip = "strip",
         .extra_cflags =
-            " -I/opt/homebrew/Cellar/openssl@3/3.6.2/include"
+            " -I" OPENSSL_MACOS "/include"
             " -mdynamic-no-pic",
         .extra_ldflags =
-            " -L/opt/homebrew/Cellar/openssl@3/3.6.2/lib"
+            " -L" OPENSSL_MACOS "/lib"
             " -Wl,-dynamic,-search_paths_first"
             " -Wl,-no_warn_duplicate_libraries",
         .frameworks =
@@ -63,6 +69,50 @@ static const struct target targets[] = {
             " -framework CoreFoundation -framework CoreServices",
         .sys_libs = " -lssl -lcrypto -lm -lz -lbz2 -liconv -lpthread",
         .build_ffplay = true,
+        .build_objc = true,
+    },
+    {
+        /* Android arm64. Needs target-specific HAVE_* and ARCH_* values in
+         * config.h (current config.h targets macOS). Generate those once via
+         * upstream configure on the Android toolchain, then commit.
+         */
+        .name = "android-arm64",
+        .cc = ANDROID_NDK "/toolchains/llvm/prebuilt/darwin-x86_64/bin/aarch64-linux-android" ANDROID_API "-clang",
+        .ar = ANDROID_NDK "/toolchains/llvm/prebuilt/darwin-x86_64/bin/llvm-ar",
+        .strip = ANDROID_NDK "/toolchains/llvm/prebuilt/darwin-x86_64/bin/llvm-strip",
+        .extra_cflags =
+            " -I" OPENSSL_ANDROID "/include"
+            " -fPIC -DANDROID",
+        .extra_ldflags =
+            " -L" OPENSSL_ANDROID "/lib",
+        .frameworks = "",
+        .sys_libs =
+            " -lssl -lcrypto -lm -lz -llog -landroid"
+            " -lcamera2ndk -lmediandk",
+        .build_ffplay = false,
+        .build_objc = false,
+    },
+    {
+        /* iOS arm64. Needs iPhoneOS SDK (via xcrun) and openssl built for iOS.
+         * Openssl path must be set below; if missing, cross-compile openssl
+         * for ios-arm64 first.
+         */
+        .name = "ios-arm64",
+        .cc = "xcrun --sdk iphoneos clang",
+        .ar = "xcrun --sdk iphoneos ar",
+        .strip = "xcrun --sdk iphoneos strip",
+        .extra_cflags =
+            " -arch arm64"
+            " -miphoneos-version-min=13.0"
+            " -fembed-bitcode",
+        .extra_ldflags = " -arch arm64",
+        .frameworks =
+            " -framework Foundation -framework AudioToolbox"
+            " -framework AVFoundation -framework CoreVideo -framework CoreMedia"
+            " -framework CoreGraphics -framework VideoToolbox"
+            " -framework CoreFoundation",
+        .sys_libs = " -lssl -lcrypto -lm -lz -lbz2 -liconv -lpthread",
+        .build_ffplay = false,
         .build_objc = true,
     },
     { .name = NULL }
@@ -506,9 +556,61 @@ static void gen_resources(void) {
 /* ----- orchestration ----- */
 
 static void usage(void) {
-    fprintf(stderr, "usage: build [-v] [-j N] [target]\n");
-    fprintf(stderr, "targets: macos-arm64\n");
+    fprintf(stderr, "usage: build [-v] [-j N] [target|clean]\n");
+    fprintf(stderr, "targets:\n");
+    for (int i = 0; targets[i].name; i++)
+        fprintf(stderr, "  %s\n", targets[i].name);
+    fprintf(stderr, "  clean   remove all build artifacts\n");
     exit(1);
+}
+
+static int rm_walk(const char *root, const char *const *exts) {
+    int count = 0;
+    DIR *d = opendir(root);
+    if (!d) return 0;
+    struct dirent *e;
+    while ((e = readdir(d))) {
+        if (e->d_name[0] == '.' && (e->d_name[1] == 0 ||
+            (e->d_name[1] == '.' && e->d_name[2] == 0))) continue;
+        char path[1024];
+        snprintf(path, sizeof path, "%s/%s", root, e->d_name);
+        struct stat st;
+        if (lstat(path, &st) != 0) continue;
+        if (S_ISDIR(st.st_mode)) {
+            count += rm_walk(path, exts);
+        } else {
+            const char *dot = strrchr(e->d_name, '.');
+            if (!dot) continue;
+            for (int i = 0; exts[i]; i++) {
+                if (strcmp(dot, exts[i]) == 0) {
+                    unlink(path);
+                    count++;
+                    break;
+                }
+            }
+        }
+    }
+    closedir(d);
+    return count;
+}
+
+static void do_clean(void) {
+    static const char *exts[] = {".o", ".a", ".d", NULL};
+    const char *dirs[] = {
+        "libavcodec","libavformat","libavfilter","libavdevice",
+        "libavutil","libswscale","libswresample","fftools", NULL
+    };
+    int total = 0;
+    for (int i = 0; dirs[i]; i++) total += rm_walk(dirs[i], exts);
+    /* Binaries */
+    const char *bins[] = {
+        "ffmpeg","ffmpeg_g","ffprobe","ffprobe_g","ffplay","ffplay_g",
+        "fftools/resources/graph.html.c","fftools/resources/graph.css.c",
+        NULL
+    };
+    for (int i = 0; bins[i]; i++)
+        if (unlink(bins[i]) == 0) total++;
+    fprintf(stderr, "clean: removed %d files\n", total);
 }
 
 int main(int argc, char **argv) {
@@ -524,6 +626,7 @@ int main(int argc, char **argv) {
             if (jobs_n < 1) jobs_n = 1;
         }
         else if (strcmp(argv[i], "-h") == 0) usage();
+        else if (strcmp(argv[i], "clean") == 0) { do_clean(); return 0; }
         else tname = argv[i];
     }
 
