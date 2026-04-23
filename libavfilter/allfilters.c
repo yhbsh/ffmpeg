@@ -35,6 +35,7 @@ extern const FFFilter ff_af_atrim;
 extern const FFFilter ff_af_volume;
 
 extern const FFFilter ff_asrc_anullsrc;
+extern const FFFilter ff_asrc_sine;
 
 extern const FFFilter ff_asink_anullsink;
 

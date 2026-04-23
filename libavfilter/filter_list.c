@@ -12,6 +12,7 @@ static const FFFilter * const filter_list[] = {
     &ff_asink_anullsink,
     &ff_asrc_abuffer,
     &ff_asrc_anullsrc,
+    &ff_asrc_sine,
     &ff_avf_concat,
     &ff_avsrc_amovie,
     &ff_avsrc_movie,
@@ -55,4 +56,5 @@ static const FFFilter * const filter_list[] = {
     &ff_vsrc_testsrc,
     &ff_vsrc_testsrc2,
     &ff_vsrc_yuvtestsrc,
+
     NULL };

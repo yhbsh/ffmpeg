@@ -401,6 +401,7 @@ static const char *libavfilter_c_srcs[] = {
     "libavfilter/allfilters.c",
     "libavfilter/asink_anullsink.c",
     "libavfilter/asrc_anullsrc.c",
+    "libavfilter/asrc_sine.c",
     "libavfilter/audio.c",
     "libavfilter/avf_concat.c",
     "libavfilter/avfilter.c",
