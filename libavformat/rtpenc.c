@@ -602,34 +602,13 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         else
             ff_rtp_send_aac(s1, pkt->data, size);
         break;
-    case AV_CODEC_ID_AMR_NB:
-    case AV_CODEC_ID_AMR_WB:
-        ff_rtp_send_amr(s1, pkt->data, size);
-        break;
-    case AV_CODEC_ID_AV1:
-        ff_rtp_send_av1(s1, pkt->data, size, (pkt->flags & AV_PKT_FLAG_KEY) ? 1 : 0);
-        break;
     case AV_CODEC_ID_MPEG2TS:
         rtp_send_mpegts_raw(s1, pkt->data, size);
-        break;
-    case AV_CODEC_ID_DIRAC:
-        ff_rtp_send_vc2hq(s1, pkt->data, size, st->codecpar->field_order != AV_FIELD_PROGRESSIVE ? 1 : 0);
         break;
     case AV_CODEC_ID_H264:
         ff_rtp_send_h264_hevc(s1, pkt->data, size);
         break;
-    case AV_CODEC_ID_H261:
-        ff_rtp_send_h261(s1, pkt->data, size);
-        break;
     case AV_CODEC_ID_H263:
-        if (s->flags & FF_RTP_FLAG_RFC2190) {
-            size_t mb_info_size;
-            const uint8_t *mb_info =
-                av_packet_get_side_data(pkt, AV_PKT_DATA_H263_MB_INFO,
-                                        &mb_info_size);
-            ff_rtp_send_h263_rfc2190(s1, pkt->data, size, mb_info, mb_info_size);
-            break;
-        }
         /* Fallthrough */
     case AV_CODEC_ID_H263P:
         ff_rtp_send_h263(s1, pkt->data, size);

@@ -728,8 +728,6 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                 }
             }
         } else {
-            if (rt->server_type == RTSP_SERVER_WMS)
-                ff_wms_parse_sdp_a_line(s, p);
             if (s->nb_streams > 0) {
                 rtsp_st = rt->rtsp_streams[rt->nb_rtsp_streams - 1];
 
