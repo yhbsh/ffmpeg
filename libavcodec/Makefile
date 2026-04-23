@@ -65,9 +65,7 @@ SHLIBOBJS = float_scalarproduct.o                                       \
 include $(SRC_PATH)/libavcodec/aac/Makefile
 include $(SRC_PATH)/libavcodec/hevc/Makefile
 include $(SRC_PATH)/libavcodec/opus/Makefile
-include $(SRC_PATH)/libavcodec/vvc/Makefile
 -include $(SRC_PATH)/libavcodec/$(ARCH)/hevc/Makefile
--include $(SRC_PATH)/libavcodec/$(ARCH)/vvc/Makefile
 OBJS-$(CONFIG_AANDCTTABLES)            += aandcttab.o
 OBJS-$(CONFIG_AC3DSP)                  += ac3dsp.o ac3.o ac3tab.o
 OBJS-$(CONFIG_ADTS_HEADER)             += adts_header.o mpeg4audio_sample_rates.o
@@ -1166,7 +1164,6 @@ OBJS-$(CONFIG_VC1_PARSER)              += vc1_parser.o vc1.o vc1data.o  \
 OBJS-$(CONFIG_VP3_PARSER)              += vp3_parser.o
 OBJS-$(CONFIG_VP8_PARSER)              += vp8_parser.o
 OBJS-$(CONFIG_VP9_PARSER)              += vp9_parser.o
-OBJS-$(CONFIG_VVC_PARSER)              += vvc_parser.o
 OBJS-$(CONFIG_WEBP_PARSER)             += webp_parser.o
 OBJS-$(CONFIG_XBM_PARSER)              += xbm_parser.o
 OBJS-$(CONFIG_XMA_PARSER)              += xma_parser.o

@@ -24,7 +24,6 @@ OBJS = allfilters.o                                                     \
        version.o                                                        \
        video.o                                                          \
 
-include $(SRC_PATH)/libavfilter/dnn/Makefile
 
 OBJS-$(HAVE_LIBC_MSVCRT)                     += file_open.o
 OBJS-$(HAVE_THREADS)                         += pthread.o
@@ -615,5 +614,4 @@ TESTPROGS-$(CONFIG_DRAWVG_FILTER) += drawvg
 TOOLS-$(CONFIG_LIBZMQ) += zmqsend
 
 clean::
-	$(RM) $(CLEANSUFFIXES:%=libavfilter/dnn/%) \
               $(CLEANSUFFIXES:%=libavfilter/metal/%)
