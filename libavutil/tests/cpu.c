@@ -25,8 +25,6 @@
 
 #if ARCH_AARCH64
 #include "libavutil/aarch64/cpu.h"
-#elif ARCH_RISCV
-#include "libavutil/riscv/cpu.h"
 #endif
 
 #if HAVE_UNISTD_H
