@@ -303,10 +303,14 @@ static void ensure_dir_for(const char *path) {
 
 /* ----- command runner ----- */
 
-static bool verbose = false;
+static bool verbose = false;     /* -v: print every command */
+static bool quiet = false;       /* -q: suppress CC/AS/AR/LD tag lines */
+static bool dry_run = false;     /* -n: print but don't execute */
+static bool keep_going = false;  /* -k: don't stop on first failure */
 
 static int run(const char *cmd) {
-    if (verbose) fprintf(stderr, "$ %s\n", cmd);
+    if (verbose || dry_run) fprintf(stderr, "$ %s\n", cmd);
+    if (dry_run) return 0;
     int rc = system(cmd);
     if (rc == -1) die("system: %s", strerror(errno));
     if (WIFSIGNALED(rc)) die("killed by signal %d", WTERMSIG(rc));
@@ -317,6 +321,7 @@ static int run(const char *cmd) {
  * fork + execvp + waitpid on the specific child.
  */
 static int run_cmd_mt(const char *cmd) {
+    if (dry_run) return 0;
     pid_t pid = fork();
     if (pid < 0) return -1;
     if (pid == 0) {
@@ -361,27 +366,33 @@ static void *worker(void *arg) {
     (void)arg;
     for (;;) {
         pthread_mutex_lock(&job_mu);
-        if (job_fail || next_job >= njobs) {
+        if ((job_fail && !keep_going) || next_job >= njobs) {
             pthread_mutex_unlock(&job_mu);
             return NULL;
         }
         size_t i = next_job++;
         pthread_mutex_unlock(&job_mu);
 
-        pthread_mutex_lock(&out_mu);
-        const char *tag = strstr(jobs[i].src, ".m") ? "OBJCC" :
-                          (strstr(jobs[i].src, ".S") ? "AS   " : "CC   ");
-        fprintf(stderr, "%s %s\n", tag, jobs[i].src);
-        pthread_mutex_unlock(&out_mu);
+        if (!quiet) {
+            pthread_mutex_lock(&out_mu);
+            const char *tag = strstr(jobs[i].src, ".m") ? "OBJCC" :
+                              (strstr(jobs[i].src, ".S") ? "AS   " : "CC   ");
+            fprintf(stderr, "%s %s\n", tag, jobs[i].src);
+            pthread_mutex_unlock(&out_mu);
+        }
 
-        int rc = run_cmd_mt(jobs[i].cmd);
+        int rc = (verbose || dry_run)
+            ? (fprintf(stderr, "$ %s\n", jobs[i].cmd), (dry_run ? 0 : run_cmd_mt(jobs[i].cmd)))
+            : run_cmd_mt(jobs[i].cmd);
         if (rc != 0) {
             pthread_mutex_lock(&job_mu);
             job_fail = 1;
             pthread_mutex_unlock(&job_mu);
+            pthread_mutex_lock(&out_mu);
             fprintf(stderr, "FAILED: %s\n", jobs[i].src);
             fprintf(stderr, "CMD: %s\n", jobs[i].cmd);
-            return NULL;
+            pthread_mutex_unlock(&out_mu);
+            if (!keep_going) return NULL;
         }
     }
 }
@@ -389,7 +400,7 @@ static void *worker(void *arg) {
 static void run_jobs_parallel(int nthreads) {
     pthread_t ts[64];
     if (nthreads > 64) nthreads = 64;
-    fprintf(stderr, "build: spawning %d workers\n", nthreads);
+    if (!quiet) fprintf(stderr, "build: spawning %d workers\n", nthreads);
     for (int i = 0; i < nthreads; i++) {
         int rc = pthread_create(&ts[i], NULL, worker, NULL);
         if (rc != 0) die("pthread_create: %s", strerror(rc));
@@ -517,8 +528,8 @@ static void archive_lib(const struct target *t, const char *lib) {
     ADD_LIB(libswresample) ADD_LIB_S(libswresample)
     ADD_LIB(libswscale)  ADD_LIB_S(libswscale)
 
-    unlink(arfile);
-    fprintf(stderr, "AR    %s\n", arfile);
+    if (!dry_run) unlink(arfile);
+    if (!quiet) fprintf(stderr, "AR    %s\n", arfile);
     if (run(cmd) != 0) die("ar failed");
 
     char ranlib_cmd[512];
@@ -570,14 +581,14 @@ static void link_binary(const struct target *t, const char *outname,
     if (with_sdl)
         n += snprintf(cmd+n, sizeof cmd - n, "%s", SDL_LIBS);
 
-    fprintf(stderr, "LD    %s_g\n", outname);
+    if (!quiet) fprintf(stderr, "LD    %s_g\n", outname);
     if (run(cmd) != 0) die("link failed: %s", outname);
 
     /* Strip */
     char strip_cmd[512];
     snprintf(strip_cmd, sizeof strip_cmd, "%s -x -o %s %s_g",
              t->strip, outname, outname);
-    fprintf(stderr, "STRIP %s\n", outname);
+    if (!quiet) fprintf(stderr, "STRIP %s\n", outname);
     if (run(strip_cmd) != 0) die("strip failed");
 }
 
@@ -585,11 +596,15 @@ static void link_binary(const struct target *t, const char *outname,
 
 static void bin2c(const char *input, const char *output, const char *varname) {
     if (file_exists(output) && mtime(output) > mtime(input)) return;
+    if (dry_run) {
+        fprintf(stderr, "BIN2C %s (dry-run, skipped)\n", output);
+        return;
+    }
     FILE *in = fopen(input, "rb");
     if (!in) die("open %s: %s", input, strerror(errno));
     FILE *out = fopen(output, "wb");
     if (!out) die("open %s: %s", output, strerror(errno));
-    fprintf(stderr, "BIN2C %s\n", output);
+    if (!quiet) fprintf(stderr, "BIN2C %s\n", output);
     fprintf(out, "const unsigned char ff_%s_data[] = { ", varname);
     unsigned char byte;
     unsigned len = 0;
@@ -634,7 +649,7 @@ static void install_header(const char *dst, const char *src_template, const char
 
     char cmd[512];
     snprintf(cmd, sizeof cmd, "cp %s %s", src, dst);
-    fprintf(stderr, "GEN   %s (from %s)\n", dst, src);
+    if (!quiet) fprintf(stderr, "GEN   %s (from %s)\n", dst, src);
     if (run(cmd) != 0) die("install %s failed", dst);
 }
 
@@ -647,13 +662,63 @@ static void install_config_for(const struct target *t) {
                    "libavdevice/outdev_list-%s.c", t->name);
 }
 
-static void usage(void) {
-    fprintf(stderr, "usage: build [-v] [-j N] [target|clean]\n");
-    fprintf(stderr, "targets:\n");
+static void print_help(FILE *out) {
+    fprintf(out,
+        "usage: build [options] [target|command]\n"
+        "\n"
+        "A single-file C build driver for this FFmpeg fork. Compiles each\n"
+        "source via fork+execvp, archives per-library, links the tools.\n"
+        "\n"
+        "Commands:\n"
+        "  <target>          Build for the named target (default: macos-arm64)\n"
+        "  clean             Remove all .o / .d / .a files and built binaries\n"
+        "  help              Show this help\n"
+        "  list-targets      Print known targets\n"
+        "\n"
+        "Options:\n"
+        "  -t, --target T    Select build target (same as giving positional arg)\n"
+        "  -j, --jobs N      Parallel workers (default: host cpu count)\n"
+        "  -v, --verbose     Print every spawned command\n"
+        "  -q, --quiet       Suppress per-file CC/AS/AR/LD tag lines\n"
+        "  -n, --dry-run     Print commands without executing anything\n"
+        "  -k, --keep-going  Keep compiling other sources after a failure\n"
+        "  -l, --list-targets\n"
+        "                    Equivalent to the list-targets command\n"
+        "  -h, --help        Show this help\n"
+        "\n"
+        "Targets:\n");
+    for (int i = 0; targets[i].name; i++) {
+        const struct target *t = &targets[i];
+        fprintf(out, "  %-16s %s%s%s\n", t->name,
+                t->is_darwin  ? "Darwin "   : "",
+                t->is_macos   ? "(macOS)"   : (t->is_darwin ? "(iOS)" : ""),
+                t->is_android ? "Android"   : "");
+    }
+    fprintf(out,
+        "\n"
+        "Examples:\n"
+        "  build                   # build default target in parallel\n"
+        "  build -j4 -v            # 4 workers, verbose\n"
+        "  build android-arm64     # cross-compile for Android\n"
+        "  build -n ios-arm64      # preview iOS build without running\n"
+        "  build clean             # remove all artifacts\n"
+        "\n");
+}
+
+static void list_targets(void) {
     for (int i = 0; targets[i].name; i++)
-        fprintf(stderr, "  %s\n", targets[i].name);
-    fprintf(stderr, "  clean   remove all build artifacts\n");
-    exit(1);
+        printf("%s\n", targets[i].name);
+}
+
+static void usage_err(const char *fmt, ...) {
+    va_list ap;
+    va_start(ap, fmt);
+    fprintf(stderr, "build: ");
+    vfprintf(stderr, fmt, ap);
+    fprintf(stderr, "\n");
+    va_end(ap);
+    fprintf(stderr, "try 'build -h' for help\n");
+    exit(2);
 }
 
 static int rm_walk(const char *root, const char *const *exts) {
@@ -694,7 +759,7 @@ static void do_clean(void) {
     };
     int total = 0;
     for (int i = 0; dirs[i]; i++) total += rm_walk(dirs[i], exts);
-    /* Binaries */
+    /* Binaries and generated resource sources */
     const char *bins[] = {
         "ffmpeg","ffmpeg_g","ffprobe","ffprobe_g","ffplay","ffplay_g",
         "fftools/resources/graph.html.c","fftools/resources/graph.css.c",
@@ -702,32 +767,96 @@ static void do_clean(void) {
     };
     for (int i = 0; bins[i]; i++)
         if (unlink(bins[i]) == 0) total++;
-    fprintf(stderr, "clean: removed %d files\n", total);
+    if (!quiet) fprintf(stderr, "clean: removed %d files\n", total);
+}
+
+/* Parse a value for --flag=X or --flag X / -fX / -f X. Consumes argv[i]
+ * (+ argv[i+1] if needed) and returns the value string. Sets *idx to the
+ * last index consumed. */
+static const char *take_value(int *idx, int argc, char **argv, const char *name) {
+    char *s = argv[*idx];
+    size_t nlen = strlen(name);
+    if (s[0] == '-' && s[1] == '-') {
+        char *eq = strchr(s, '=');
+        if (eq) return eq + 1;
+    } else if (s[0] == '-' && strlen(s) > nlen) {
+        /* -jN attached form */
+        return s + nlen;
+    }
+    if (*idx + 1 >= argc)
+        usage_err("option '%s' requires a value", name);
+    *idx += 1;
+    return argv[*idx];
+}
+
+static bool arg_is(const char *a, const char *short_name, const char *long_name) {
+    if (short_name && strcmp(a, short_name) == 0) return true;
+    if (long_name) {
+        size_t n = strlen(long_name);
+        if (strncmp(a, long_name, n) == 0 &&
+            (a[n] == 0 || a[n] == '='))
+            return true;
+    }
+    return false;
 }
 
 int main(int argc, char **argv) {
     int jobs_n = ncpu();
-    const char *tname = "macos-arm64";
+    const char *tname = NULL;
+    const char *command = NULL;  /* "build" (default), "clean", "list-targets" */
 
     for (int i = 1; i < argc; i++) {
-        if (strcmp(argv[i], "-v") == 0) verbose = true;
-        else if (strncmp(argv[i], "-j", 2) == 0) {
-            const char *v = argv[i] + 2;
-            if (*v == 0 && i + 1 < argc) v = argv[++i];
-            jobs_n = atoi(v);
-            if (jobs_n < 1) jobs_n = 1;
+        char *a = argv[i];
+        if (arg_is(a, "-h", "--help") || strcmp(a, "help") == 0) {
+            print_help(stdout);
+            return 0;
         }
-        else if (strcmp(argv[i], "-h") == 0) usage();
-        else if (strcmp(argv[i], "clean") == 0) { do_clean(); return 0; }
-        else tname = argv[i];
+        if (arg_is(a, "-l", "--list-targets") || strcmp(a, "list-targets") == 0) {
+            list_targets();
+            return 0;
+        }
+        if (arg_is(a, "-v", "--verbose"))   { verbose = true; continue; }
+        if (arg_is(a, "-q", "--quiet"))     { quiet = true; continue; }
+        if (arg_is(a, "-n", "--dry-run"))   { dry_run = true; continue; }
+        if (arg_is(a, "-k", "--keep-going")){ keep_going = true; continue; }
+        if (arg_is(a, "-j", "--jobs") || strncmp(a, "-j", 2) == 0) {
+            const char *v = take_value(&i, argc, argv,
+                strncmp(a, "--", 2) == 0 ? "--jobs" : "-j");
+            jobs_n = atoi(v);
+            if (jobs_n < 1) usage_err("-j/--jobs expects a positive integer");
+            continue;
+        }
+        if (arg_is(a, "-t", "--target")) {
+            tname = take_value(&i, argc, argv,
+                strncmp(a, "--", 2) == 0 ? "--target" : "-t");
+            continue;
+        }
+        if (strcmp(a, "clean") == 0) { command = "clean"; continue; }
+        if (strcmp(a, "build") == 0) { command = "build"; continue; }
+        if (a[0] == '-') usage_err("unknown option: %s", a);
+        /* Positional: target name */
+        if (tname && strcmp(tname, a) != 0)
+            usage_err("target specified twice: %s and %s", tname, a);
+        tname = a;
     }
+
+    if (command && strcmp(command, "clean") == 0) {
+        do_clean();
+        return 0;
+    }
+
+    if (!tname) tname = "macos-arm64";
 
     const struct target *t = NULL;
     for (int i = 0; targets[i].name; i++)
         if (strcmp(targets[i].name, tname) == 0) { t = &targets[i]; break; }
-    if (!t) die("unknown target: %s", tname);
+    if (!t) usage_err("unknown target: %s (try --list-targets)", tname);
 
-    fprintf(stderr, "build: target=%s jobs=%d\n", t->name, jobs_n);
+    if (quiet && verbose) usage_err("--quiet and --verbose are mutually exclusive");
+
+    if (!quiet)
+        fprintf(stderr, "build: target=%s jobs=%d%s\n",
+                t->name, jobs_n, dry_run ? " (dry-run)" : "");
 
     /* 0. Install target-specific config.h */
     install_config_for(t);
@@ -758,7 +887,7 @@ int main(int argc, char **argv) {
         emit_job(s, NULL, t, is_ffplay ? cflags_sdl : cflags);
     }
 
-    fprintf(stderr, "build: %zu compile jobs\n", njobs);
+    if (!quiet) fprintf(stderr, "build: %zu compile jobs\n", njobs);
 
     /* 4. Run compiles in parallel */
     run_jobs_parallel(jobs_n);
@@ -773,6 +902,6 @@ int main(int argc, char **argv) {
     if (t->build_ffplay)
         link_binary(t, "ffplay",  FFPLAY_OBJS,  true);
 
-    fprintf(stderr, "build: done.\n");
+    if (!quiet) fprintf(stderr, "build: done.\n");
     return 0;
 }
