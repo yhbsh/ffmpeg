@@ -543,75 +543,152 @@ static void link_binary(const struct target *t, const char *outname,
     if (run(strip_cmd) != 0) die("strip failed");
 }
 
-/* ----- resource generation (html/css → .c as byte array) ----- */
+/* ----- config generation ----- */
 
-static void bin2c(const char *input, const char *output, const char *varname) {
-    if (file_exists(output) && mtime(output) > mtime(input)) return;
-    if (dry_run) {
-        fprintf(stderr, "BIN2C %s (dry-run, skipped)\n", output);
-        return;
+/* Base config content + per-target overrides all live in build_config.h. */
+#include "build_config.h"
+
+/* Apply {name, value} overrides to a base config.h/config_components.h
+ * content and return a freshly malloc'd result. */
+static char *apply_overrides(const char *base, const struct config_override *ovr) {
+    /* Work line by line. For each line "#define NAME VALUE", look up NAME in
+     * the override table: NULL value → drop, otherwise replace. Any overrides
+     * whose NAME is not present in base are appended at the end. */
+    size_t cap = strlen(base) + 4096;
+    char *out = malloc(cap);
+    if (!out) die("oom");
+    size_t len = 0;
+    bool *used = calloc(1024, sizeof(bool));  /* used[i] = did override i apply */
+    int nover = 0;
+    for (; ovr[nover].name; nover++) ;
+    if (!used) die("oom");
+
+    const char *p = base;
+    while (*p) {
+        const char *eol = strchr(p, '\n');
+        size_t line_len = eol ? (size_t)(eol - p) : strlen(p);
+        /* Does this line match any override? */
+        const char *keep_line = p;
+        size_t keep_len = line_len + (eol ? 1 : 0);
+        if (line_len > 8 && strncmp(p, "#define ", 8) == 0) {
+            const char *name_start = p + 8;
+            const char *name_end = name_start;
+            while (name_end < p + line_len && *name_end != ' ' && *name_end != '\t')
+                name_end++;
+            size_t nlen = name_end - name_start;
+            for (int i = 0; i < nover; i++) {
+                if (strlen(ovr[i].name) == nlen &&
+                    strncmp(ovr[i].name, name_start, nlen) == 0) {
+                    used[i] = true;
+                    if (ovr[i].value == NULL) {
+                        keep_len = 0;  /* drop line */
+                    } else {
+                        /* Emit replacement inline */
+                        if (len + 8 + nlen + 1 + strlen(ovr[i].value) + 1 >= cap) {
+                            cap = (len + 8 + nlen + 1 + strlen(ovr[i].value) + 1) * 2;
+                            out = realloc(out, cap);
+                            if (!out) die("oom");
+                        }
+                        len += snprintf(out + len, cap - len,
+                                        "#define %.*s %s\n",
+                                        (int)nlen, name_start, ovr[i].value);
+                        keep_len = 0;
+                    }
+                    break;
+                }
+            }
+        }
+        if (keep_len) {
+            while (len + keep_len >= cap) {
+                cap *= 2;
+                out = realloc(out, cap);
+                if (!out) die("oom");
+            }
+            memcpy(out + len, keep_line, keep_len);
+            len += keep_len;
+        }
+        p = eol ? eol + 1 : p + line_len;
     }
-    FILE *in = fopen(input, "rb");
-    if (!in) die("open %s: %s", input, strerror(errno));
-    FILE *out = fopen(output, "wb");
-    if (!out) die("open %s: %s", output, strerror(errno));
-    if (!quiet) fprintf(stderr, "BIN2C %s\n", output);
-    fprintf(out, "const unsigned char ff_%s_data[] = { ", varname);
-    unsigned char byte;
-    unsigned len = 0;
-    while (fread(&byte, 1, 1, in) == 1) {
-        fprintf(out, "0x%02x, ", byte);
-        len++;
+    /* Append any overrides that didn't hit an existing line. */
+    for (int i = 0; i < nover; i++) {
+        if (used[i] || ovr[i].value == NULL) continue;
+        size_t need = strlen(ovr[i].name) + strlen(ovr[i].value) + 16;
+        while (len + need >= cap) {
+            cap *= 2;
+            out = realloc(out, cap);
+            if (!out) die("oom");
+        }
+        len += snprintf(out + len, cap - len, "#define %s %s\n",
+                        ovr[i].name, ovr[i].value);
     }
-    fprintf(out, "0x00 };\n");
-    fprintf(out, "const unsigned int ff_%s_len = %u;\n", varname, len);
-    fclose(out);
-    fclose(in);
+    out[len] = 0;
+    free(used);
+    return out;
 }
 
-static void gen_resources(void) {
-    /* The byte-array forms of graph.html / graph.css are pre-baked into
-     * fftools/common.c. No generation step required. */
-}
-
-/* ----- orchestration ----- */
-
-/* Copy a per-target header into its canonical location. */
-static void install_header(const char *dst, const char *src_template, const char *tname) {
-    char src[256];
-    snprintf(src, sizeof src, src_template, tname);
-    if (!file_exists(src))
-        die("missing %s (hand-maintained per-target header)", src);
-
-    /* Skip if identical */
-    FILE *a = fopen(src, "rb");
-    FILE *b = fopen(dst, "rb");
-    bool same = false;
-    if (a && b) {
-        same = true;
-        int ca, cb;
-        while ((ca = fgetc(a)) == (cb = fgetc(b)) && ca != EOF) {}
-        if (ca != EOF || cb != EOF) same = false;
+/* Write `content` to `path`, but only if it differs from existing content
+ * (avoids touching mtime + triggering unnecessary rebuilds). */
+static void write_if_different(const char *path, const char *content) {
+    FILE *ex = fopen(path, "rb");
+    if (ex) {
+        fseek(ex, 0, SEEK_END);
+        long n = ftell(ex);
+        fseek(ex, 0, SEEK_SET);
+        if (n == (long)strlen(content)) {
+            char *buf = malloc(n + 1);
+            if (buf && fread(buf, 1, n, ex) == (size_t)n) {
+                buf[n] = 0;
+                if (memcmp(buf, content, n) == 0) {
+                    free(buf); fclose(ex); return;
+                }
+            }
+            free(buf);
+        }
+        fclose(ex);
     }
-    if (a) fclose(a);
-    if (b) fclose(b);
-    if (same) return;
-
-    char cmd[512];
-    snprintf(cmd, sizeof cmd, "cp %s %s", src, dst);
-    if (!quiet) fprintf(stderr, "GEN   %s (from %s)\n", dst, src);
-    if (run(cmd) != 0) die("install %s failed", dst);
+    if (!quiet) fprintf(stderr, "GEN   %s\n", path);
+    FILE *f = fopen(path, "wb");
+    if (!f) die("open %s: %s", path, strerror(errno));
+    fwrite(content, 1, strlen(content), f);
+    fclose(f);
 }
 
 static void install_config_for(const struct target *t) {
-    install_header("config.h",             "config-%s.h",             t->name);
-    install_header("config_components.h",  "config_components-%s.h",  t->name);
-    install_header("libavdevice/indev_list.c",
-                   "libavdevice/indev_list-%s.c",  t->name);
-    install_header("libavdevice/outdev_list.c",
-                   "libavdevice/outdev_list-%s.c", t->name);
-    install_header("libavcodec/codec_list.c",
-                   "libavcodec/codec_list-%s.c",  t->name);
+    /* config.h */
+    const struct config_override *h_ovr = NULL;
+    const struct config_override *cc_ovr = NULL;
+    const char *codec_list = NULL, *indev_list = NULL, *outdev_list = NULL;
+
+    if (strcmp(t->name, "macos-arm64") == 0) {
+        codec_list = codec_list_macos_arm64;
+        indev_list = indev_list_macos_arm64;
+        outdev_list = outdev_list_macos_arm64;
+    } else if (strcmp(t->name, "android-arm64") == 0) {
+        h_ovr = config_h_ovr_android_arm64;
+        cc_ovr = config_components_h_ovr_android_arm64;
+        codec_list = codec_list_android_arm64;
+        indev_list = indev_list_android_arm64;
+        outdev_list = outdev_list_android_arm64;
+    } else if (strcmp(t->name, "ios-arm64") == 0) {
+        h_ovr = config_h_ovr_ios_arm64;
+        cc_ovr = config_components_h_ovr_ios_arm64;
+        codec_list = codec_list_ios_arm64;
+        indev_list = indev_list_ios_arm64;
+        outdev_list = outdev_list_ios_arm64;
+    } else {
+        die("no config data for target %s", t->name);
+    }
+
+    char *hdr = h_ovr ? apply_overrides(BASE_CONFIG_H, h_ovr)
+                      : strdup(BASE_CONFIG_H);
+    char *cc  = cc_ovr ? apply_overrides(BASE_CONFIG_COMPONENTS_H, cc_ovr)
+                       : strdup(BASE_CONFIG_COMPONENTS_H);
+    write_if_different("config.h", hdr);
+    write_if_different("config_components.h", cc);
+    free(hdr); free(cc);
+    write_if_different("libavcodec/codec_list.c",   codec_list);
+    write_if_different("libavdevice/indev_list.c",  indev_list);
+    write_if_different("libavdevice/outdev_list.c", outdev_list);
 }
 
 static void print_help(FILE *out) {
@@ -810,13 +887,12 @@ int main(int argc, char **argv) {
         fprintf(stderr, "build: target=%s jobs=%d%s\n",
                 t->name, jobs_n, dry_run ? " (dry-run)" : "");
 
-    /* 0. Install target-specific config.h */
+    /* 0. Generate target-specific config.h / config_components.h /
+     *    codec_list.c / indev_list.c / outdev_list.c from base content
+     *    + per-target overrides in build_config.h. */
     install_config_for(t);
 
-    /* 1. Generate resources (html/css → C arrays) */
-    gen_resources();
-
-    /* 2. Build combined CFLAGS */
+    /* Build combined CFLAGS */
     char cflags[4096];
     snprintf(cflags, sizeof cflags, "%s", COMMON_CFLAGS);
 
