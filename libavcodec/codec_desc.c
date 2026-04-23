@@ -419,6 +419,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
     },
 
     /* other kind of codecs and pseudo-codecs */
+    {
+        .id        = AV_CODEC_ID_WRAPPED_AVFRAME,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "wrapped_avframe",
+        .long_name = NULL_IF_CONFIG_SMALL("AVFrame to AVPacket passthrough"),
+        .props     = AV_CODEC_PROP_LOSSLESS,
+    },
 };
 
 static int descriptor_compare(const void *key, const void *member)

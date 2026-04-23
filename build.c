@@ -534,9 +534,10 @@ static void link_binary(const struct target *t, const char *outname,
     if (!quiet) fprintf(stderr, "LD    %s_g\n", outname);
     if (run(cmd) != 0) die("link failed: %s", outname);
 
-    /* Strip */
+    /* Strip. macOS strip -x removes local symbols which breaks runtime
+     * resolution for Objective-C frameworks — use plain strip on Darwin. */
     char strip_cmd[512];
-    snprintf(strip_cmd, sizeof strip_cmd, "%s -x -o %s %s_g",
+    snprintf(strip_cmd, sizeof strip_cmd, "%s -o %s %s_g",
              t->strip, outname, outname);
     if (!quiet) fprintf(stderr, "STRIP %s\n", outname);
     if (run(strip_cmd) != 0) die("strip failed");

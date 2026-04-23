@@ -331,6 +331,7 @@ static const char *libavcodec_c_srcs[] = {
     "libavcodec/webp_parser.c",
     "libavcodec/webvttdec.c",
     "libavcodec/webvttenc.c",
+    "libavcodec/wrapped_avframe.c",
     "libavcodec/xiph.c",
     "libavcodec/xvididct.c",
     "libavcodec/zlib_wrapper.c",
