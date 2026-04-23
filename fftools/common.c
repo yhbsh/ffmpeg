@@ -4864,7 +4864,61 @@ const AVTextFormatter *avtext_get_formatter_by_name(const char *name)
 #include "avtextformat.h"
 #include "libavutil/bprint.h"
 #include "libavutil/opt.h"
-#include "tf_internal.h"
+
+/* --- inlined tf_internal.h --- */
+#include "avtextformat.h"
+
+#define DEFINE_FORMATTER_CLASS(name)                \
+static const AVClass name##_class = {               \
+    .class_name = #name,                            \
+    .item_name  = av_default_item_name,             \
+    .option     = name##_options                    \
+}
+
+
+/**
+ * Safely validate and access a section at a given level
+ */
+static inline const AVTextFormatSection *tf_get_section(AVTextFormatContext *tfc, int level)
+{
+    if (!tfc || level < 0 || level >= SECTION_MAX_NB_LEVELS || !tfc->section[level]) {
+        if (tfc)
+            av_log(tfc, AV_LOG_ERROR, "Invalid section access at level %d\n", level);
+        return NULL;
+    }
+    return tfc->section[level];
+}
+
+/**
+ * Safely access the parent section
+ */
+static inline const AVTextFormatSection *tf_get_parent_section(AVTextFormatContext *tfc, int level)
+{
+    if (level <= 0)
+        return NULL;
+
+    return tf_get_section(tfc, level - 1);
+}
+
+static inline void writer_w8(AVTextFormatContext *wctx, int b)
+{
+    wctx->writer->writer->writer_w8(wctx->writer, b);
+}
+
+static inline void writer_put_str(AVTextFormatContext *wctx, const char *str)
+{
+    wctx->writer->writer->writer_put_str(wctx->writer, str);
+}
+
+static inline void writer_printf(AVTextFormatContext *wctx, const char *fmt, ...)
+{
+    va_list args;
+    va_start(args, fmt);
+    wctx->writer->writer->writer_vprintf(wctx->writer, fmt, args);
+    va_end(args);
+}
+/* --- end tf_internal.h --- */
+
 
 /* Default output */
 
@@ -5005,7 +5059,7 @@ const AVTextFormatter avtextformatter_default = {
 #include "libavutil/bprint.h"
 #include "libavutil/error.h"
 #include "libavutil/opt.h"
-#include "tf_internal.h"
+
 
 
 /* Compact output */
@@ -5289,7 +5343,7 @@ const AVTextFormatter avtextformatter_csv = {
 #include "libavutil/bprint.h"
 #include "libavutil/error.h"
 #include "libavutil/opt.h"
-#include "tf_internal.h"
+
 
 /* Flat output */
 
@@ -5453,7 +5507,7 @@ const AVTextFormatter avtextformatter_flat = {
 
 #include "libavutil/bprint.h"
 #include "libavutil/opt.h"
-#include "tf_internal.h"
+
 
 /* Default output */
 
@@ -5605,7 +5659,7 @@ const AVTextFormatter avtextformatter_ini = {
 #include "avtextformat.h"
 #include "libavutil/bprint.h"
 #include "libavutil/opt.h"
-#include "tf_internal.h"
+
 
 /* JSON output */
 
@@ -5820,8 +5874,26 @@ const AVTextFormatter avtextformatter_json = {
 #include <string.h>
 
 #include "avtextformat.h"
-#include "tf_internal.h"
-#include "tf_mermaid.h"
+
+
+/* --- inlined tf_mermaid.h --- */
+typedef enum {
+    AV_DIAGRAMTYPE_GRAPH,
+    AV_DIAGRAMTYPE_ENTITYRELATIONSHIP,
+} AVDiagramType;
+
+typedef struct AVDiagramConfig {
+    AVDiagramType diagram_type;
+    const char *diagram_css;
+    const char *html_template;
+} AVDiagramConfig;
+
+
+void av_diagram_init(AVTextFormatContext *tfc, AVDiagramConfig *diagram_config);
+
+void av_mermaid_set_html_template(AVTextFormatContext *tfc, const char *html_template);
+/* --- end tf_mermaid.h --- */
+
 #include "libavutil/bprint.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -6500,7 +6572,7 @@ const AVTextFormatter avtextformatter_mermaidhtml = {
 #include "libavutil/bprint.h"
 #include "libavutil/error.h"
 #include "libavutil/opt.h"
-#include "tf_internal.h"
+
 
 /* XML output */
 
@@ -7022,7 +7094,15 @@ int avtextwriter_create_stdout(AVTextWriterContext **pwctx)
 #include <string.h>
 #include <stdatomic.h>
 
-#include "graphprint.h"
+
+/* --- inlined graphprint.h --- */
+#include "fftools/ffmpeg.h"
+
+int print_filtergraphs(FilterGraph **graphs, int nb_graphs, InputFile **ifiles, int nb_ifiles, OutputFile **ofiles, int nb_ofiles);
+
+int print_filtergraph(FilterGraph *fg, AVFilterGraph *graph);
+/* --- end graphprint.h --- */
+
 
 #include "fftools/ffmpeg.h"
 #include "fftools/ffmpeg_mux.h"
@@ -7036,8 +7116,36 @@ int avtextwriter_create_stdout(AVTextWriterContext **pwctx)
 #include "libavutil/buffer.h"
 #include "libavutil/hwcontext.h"
 #include "avtextformat.h"
-#include "tf_mermaid.h"
-#include "resman.h"
+
+
+/* --- inlined resman.h --- */
+#include <stdint.h>
+
+#include "config.h"
+#include "fftools/ffmpeg.h"
+#include "libavutil/avutil.h"
+#include "libavutil/bprint.h"
+#include "avtextformat.h"
+
+typedef enum {
+    FF_RESOURCE_GRAPH_CSS,
+    FF_RESOURCE_GRAPH_HTML,
+} FFResourceId;
+
+typedef struct FFResourceDefinition {
+    FFResourceId resource_id;
+    const char *name;
+
+    const unsigned char *data;
+    const unsigned *data_len;
+
+} FFResourceDefinition;
+
+void ff_resman_uninit(void);
+
+char *ff_resman_get_string(FFResourceId resource_id);
+/* --- end resman.h --- */
+
 
 typedef enum {
     SECTION_ID_ROOT,
@@ -8109,7 +8217,7 @@ int print_filtergraphs(FilterGraph **graphs, int nb_graphs, InputFile **ifiles, 
 #include <zlib.h>
 #endif
 
-#include "resman.h"
+
 #include "libavutil/avassert.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/dict.h"

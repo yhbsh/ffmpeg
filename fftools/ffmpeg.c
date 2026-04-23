@@ -7753,7 +7753,12 @@ int enc_loopback(Encoder *enc)
 #include <stdint.h>
 
 #include "ffmpeg.h"
-#include "graphprint.h"
+/* graphprint.h forward decls (full defs in common.c) */
+int print_filtergraphs(FilterGraph **graphs, int nb_graphs,
+                       InputFile **ifiles, int nb_ifiles,
+                       OutputFile **ofiles, int nb_ofiles);
+int print_filtergraph(FilterGraph *fg, AVFilterGraph *graph);
+
 
 #include "libavfilter/avfilter.h"
 #include "libavfilter/buffersink.h"
@@ -15963,7 +15968,7 @@ int of_open(const OptionsContext *o, const char *filename, Scheduler *sch)
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/stereo3d.h"
-#include "graphprint.h"
+
 
 HWDevice *filter_hw_device;
 
@@ -18200,7 +18205,7 @@ const OptionDef options[] = {
 #include "ffmpeg.h"
 #include "ffmpeg_sched.h"
 #include "ffmpeg_utils.h"
-#include "graphprint.h"
+
 
 const char program_name[] = "ffmpeg";
 const int program_birth_year = 2000;

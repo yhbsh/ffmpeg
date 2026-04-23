@@ -30,7 +30,42 @@
 #define VK_ENABLE_BETA_EXTENSIONS
 
 #include "config.h"
-#include "ffplay_renderer.h"
+
+/* --- inlined ffplay_renderer.h --- */
+#include <SDL.h>
+
+#include "libavutil/frame.h"
+
+typedef struct VkRenderer VkRenderer;
+
+#define VIDEO_BACKGROUND_TILE_SIZE 64
+
+enum VideoBackgroundType {
+    VIDEO_BACKGROUND_TILES,
+    VIDEO_BACKGROUND_COLOR,
+    VIDEO_BACKGROUND_NONE,
+};
+
+typedef struct RenderParams {
+    SDL_Rect target_rect;
+    uint8_t video_background_color[4];
+    enum VideoBackgroundType video_background_type;
+} RenderParams;
+
+VkRenderer *vk_get_renderer(void);
+
+int vk_renderer_create(VkRenderer *renderer, SDL_Window *window,
+                       AVDictionary *opt);
+
+int vk_renderer_get_hw_dev(VkRenderer *renderer, AVBufferRef **dev);
+
+int vk_renderer_display(VkRenderer *renderer, AVFrame *frame, RenderParams *params);
+
+int vk_renderer_resize(VkRenderer *renderer, int width, int height);
+
+void vk_renderer_destroy(VkRenderer *renderer);
+/* --- end ffplay_renderer.h --- */
+
 
 #if (SDL_VERSION_ATLEAST(2, 0, 6) && CONFIG_LIBPLACEBO)
 /* Get PL_API_VER */
@@ -962,7 +997,7 @@ void vk_renderer_destroy(VkRenderer *renderer)
 #include <SDL_thread.h>
 
 #include "cmdutils.h"
-#include "ffplay_renderer.h"
+
 #include "opt_common.h"
 
 const char program_name[] = "ffplay";
