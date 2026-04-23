@@ -42,20 +42,8 @@ HEADERS = adler32.h                                                     \
           hdr_dynamic_vivid_metadata.h                                  \
           hmac.h                                                        \
           hwcontext.h                                                   \
-          hwcontext_cuda.h                                              \
-          hwcontext_d3d11va.h                                           \
-          hwcontext_d3d12va.h                                           \
-          hwcontext_drm.h                                               \
-          hwcontext_dxva2.h                                             \
-          hwcontext_amf.h                                               \
-          hwcontext_qsv.h                                               \
           hwcontext_mediacodec.h                                        \
-          hwcontext_opencl.h                                            \
-          hwcontext_oh.h                                                \
-          hwcontext_vaapi.h                                             \
           hwcontext_videotoolbox.h                                      \
-          hwcontext_vdpau.h                                             \
-          hwcontext_vulkan.h                                            \
           iamf.h                                                        \
           imgutils.h                                                    \
           intfloat.h                                                    \
@@ -203,23 +191,11 @@ OBJS = adler32.o                                                        \
        video_hint.o                                                     \
 
 
-OBJS-$(CONFIG_CUDA)                     += hwcontext_cuda.o
-OBJS-$(CONFIG_D3D11VA)                  += hwcontext_d3d11va.o
-OBJS-$(CONFIG_D3D12VA)                  += hwcontext_d3d12va.o
-OBJS-$(CONFIG_DXVA2)                    += hwcontext_dxva2.o
-OBJS-$(CONFIG_AMF)                      += hwcontext_amf.o
-OBJS-$(CONFIG_LIBDRM)                   += hwcontext_drm.o
 OBJS-$(CONFIG_MACOS_KPERF)              += macos_kperf.o
 OBJS-$(CONFIG_MEDIACODEC)               += hwcontext_mediacodec.o
-OBJS-$(CONFIG_OHCODEC)                  += hwcontext_oh.o
-OBJS-$(CONFIG_OPENCL)                   += hwcontext_opencl.o
-OBJS-$(CONFIG_QSV)                      += hwcontext_qsv.o
-OBJS-$(CONFIG_VAAPI)                    += hwcontext_vaapi.o
 OBJS-$(CONFIG_VIDEOTOOLBOX)             += hwcontext_videotoolbox.o
-OBJS-$(CONFIG_VDPAU)                    += hwcontext_vdpau.o
-OBJS-$(CONFIG_VULKAN)                   += hwcontext_vulkan.o vulkan.o
 
-OBJS-$(!CONFIG_VULKAN)                  += hwcontext_stub.o
+OBJS                                    += hwcontext_stub.o
 
 OBJS += $(COMPAT_OBJS:%=../compat/%)
 
@@ -235,24 +211,7 @@ SHLIBOBJS-$(HAVE_GNU_WINDRES)           += avutilres.o
 
 SKIPHEADERS                            += objc.h
 SKIPHEADERS-$(CONFIG_ZLIB)             += zlib_utils.h
-SKIPHEADERS-$(HAVE_CUDA_H)             += hwcontext_cuda.h
-SKIPHEADERS-$(CONFIG_CUDA)             += hwcontext_cuda_internal.h     \
-                                          cuda_check.h
-SKIPHEADERS-$(CONFIG_D3D11VA)          += hwcontext_d3d11va.h
-SKIPHEADERS-$(CONFIG_D3D12VA)          += hwcontext_d3d12va.h
-SKIPHEADERS-$(CONFIG_DXVA2)            += hwcontext_dxva2.h
-SKIPHEADERS-$(CONFIG_AMF)              += hwcontext_amf.h               \
-                                          hwcontext_amf_internal.h
-SKIPHEADERS-$(CONFIG_QSV)              += hwcontext_qsv.h
-SKIPHEADERS-$(CONFIG_OPENCL)           += hwcontext_opencl.h
-SKIPHEADERS-$(CONFIG_VAAPI)            += hwcontext_vaapi.h
 SKIPHEADERS-$(CONFIG_VIDEOTOOLBOX)     += hwcontext_videotoolbox.h
-SKIPHEADERS-$(CONFIG_VDPAU)            += hwcontext_vdpau.h
-SKIPHEADERS-$(CONFIG_VULKAN)           += hwcontext_vulkan.h vulkan.h   \
-                                          vulkan_functions.h            \
-                                          vulkan_loader.h
-SKIPHEADERS-$(CONFIG_LIBSHADERC)       += vulkan_spirv.h
-SKIPHEADERS-$(CONFIG_LIBGLSLANG)       += vulkan_spirv.h
 SKIPHEADERS-$(CONFIG_SHADER_COMPRESSION) += zlib_utils.h
 
 TESTPROGS = adler32                                                     \
