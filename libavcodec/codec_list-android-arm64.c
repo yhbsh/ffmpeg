@@ -83,6 +83,4 @@ static const FFCodec * const codec_list[] = {
     &ff_webvtt_decoder,
     &ff_wrapped_avframe_encoder,
     &ff_wrapped_avframe_decoder,
-    &ff_h264_videotoolbox_encoder,
-    &ff_hevc_videotoolbox_encoder,
     NULL };

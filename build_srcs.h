@@ -302,6 +302,7 @@ static const char *libavcodec_c_srcs[] = {
     "libavcodec/version.c",
     "libavcodec/videodsp.c",
     "libavcodec/videotoolbox.c",
+    "libavcodec/videotoolboxenc.c",
     "libavcodec/videotoolbox_vp9.c",
     "libavcodec/vlc.c",
     "libavcodec/vorbis.c",

@@ -610,6 +610,8 @@ static void install_config_for(const struct target *t) {
                    "libavdevice/indev_list-%s.c",  t->name);
     install_header("libavdevice/outdev_list.c",
                    "libavdevice/outdev_list-%s.c", t->name);
+    install_header("libavcodec/codec_list.c",
+                   "libavcodec/codec_list-%s.c",  t->name);
 }
 
 static void print_help(FILE *out) {
