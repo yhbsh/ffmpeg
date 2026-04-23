@@ -613,5 +613,3 @@ TESTPROGS-$(CONFIG_DRAWVG_FILTER) += drawvg
 
 TOOLS-$(CONFIG_LIBZMQ) += zmqsend
 
-clean::
-              $(CLEANSUFFIXES:%=libavfilter/metal/%)
