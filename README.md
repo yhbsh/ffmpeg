@@ -8,47 +8,68 @@ ALAC, PCM) and the SMP/SRT/RTMP protocol stack.
 
 ```sh
 clang -O2 -o build build.c
-./build              # default: macos-arm64
-./build -j14         # 14 parallel workers
-./build -v           # verbose (print every command)
-./build clean        # remove all artifacts
-./build ios-arm64    # see caveats below
+./build                  # default: macos-arm64
+./build -j14             # 14 parallel workers
+./build -v               # verbose (print every command)
+./build clean            # remove all artifacts
+./build macos-arm64
 ./build android-arm64
+./build ios-arm64
 ```
 
-Produces `ffmpeg`, `ffprobe`, `ffplay` in the repo root plus per-library `.a`
-archives. Clean build on an M-series Mac: ~25s with 14 workers.
+Produces `ffmpeg`, `ffprobe`, `ffplay` (macOS only) in the repo root plus
+per-library `.a` archives. Clean build on an M-series Mac: ~25s with 14
+workers per target.
 
-### Dependencies (macOS)
+## Target status
 
+| Target | Status | Produces |
+|---|---|---|
+| `macos-arm64` | ✅ full build (ffmpeg + ffprobe + ffplay) | Mach-O arm64 |
+| `android-arm64` | ✅ ffmpeg + ffprobe (no ffplay; no SDL on Android) | ELF aarch64 |
+| `ios-arm64` | ⚠️ compiles, needs iOS-built openssl to link | Mach-O arm64 |
+
+### Paths to adjust in `build.c`
+
+- `OPENSSL_MACOS` — homebrew openssl@3 prefix
+- `OPENSSL_ANDROID` — directory with Android-built `lib/libcrypto.a`,
+  `lib/libssl.a`, `include/openssl/`
+- `ANDROID_NDK` + `ANDROID_API` — NDK toolchain
+
+### iOS openssl
+
+`ios-arm64` target links against `-lssl -lcrypto` but uses homebrew paths
+by default. Cross-compile openssl for iOS (arm64) first, then point the
+target's `.extra_ldflags` at it, and disable `-lssl -lcrypto` in homebrew
+search paths.
+
+## Dependencies
+
+### macOS
 - clang (Xcode command-line tools)
 - openssl — homebrew `openssl@3` (for native SRT)
-- SDL2 — for ffplay (drop `build_ffplay` in the target if unwanted)
+- SDL2 — for ffplay (set `build_ffplay = false` in target to drop)
 
-### Cross-compile caveats
-
-`config.h` and `config_components.h` are currently frozen for macOS arm64
-(`ARCH_AARCH64=1`, macOS-specific `HAVE_*` values). To build for Android or
-iOS you need target-specific replacements — run upstream FFmpeg's configure
-on the right toolchain to regenerate, then swap the header in.
-
-The Android and iOS targets in `build.c` are wired up with the correct
-compiler paths and link flags; they just can't compile until a matching
-`config.h` is in place.
-
-Openssl locations are hardcoded in `build.c` under `OPENSSL_MACOS`,
-`OPENSSL_ANDROID`, and `ANDROID_NDK` — adjust for your machine.
+### Android
+- NDK 26+ (tested with 29.0.14033849)
+- Openssl static libs cross-compiled for aarch64-linux-android
+- `compat/android/stdio_shim.c` bridges `stderr`/`stdin`/`stdout` from
+  older NDK stdio to bionic's `__sF[]`.
 
 ## Layout
 
 - `build.c`, `build_srcs.h` — build driver + generated source lists.
-- `config.h`, `config_components.h`, `libavutil/avconfig.h`,
-  `libavutil/ffversion.h` — frozen configuration.
-- `libavcodec/codec_list.c`, `libavformat/muxer_list.c`, etc. — frozen
-  registry files listing the enabled components.
+- `config-<target>.h` — per-target configure output (HAVE_*, ARCH_*,
+  OS_NAME, etc). `build.c` copies the chosen one to `config.h` before
+  compilation.
+- `config_components-<target>.h` — per-target component enable table.
+- `libavdevice/indev_list-<target>.c`, `outdev_list-<target>.c` —
+  per-target device list (macOS: AVFoundation + AudioToolbox;
+  Android: lavfi only; iOS: AVFoundation only).
+- `libavutil/avconfig.h`, `libavutil/ffversion.h` — frozen, target-agnostic.
 - `libav*/`, `libsw*/`, `fftools/` — FFmpeg sources.
-- `compat/` — minimal platform shims (Android, atomics, dispatch_semaphore,
-  float, stdbit, va_copy).
+- `compat/` — platform shims (android, atomics, dispatch_semaphore, float,
+  stdbit, va_copy).
 
 ## License
 

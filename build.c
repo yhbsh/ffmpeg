@@ -43,6 +43,7 @@ struct target {
     bool build_ffplay;          /* SDL-dependent */
     bool build_objc;            /* .m files (AVFoundation) */
     bool is_darwin;             /* macOS/iOS: compile VideoToolbox etc */
+    bool is_macos;              /* macOS only: AudioToolbox etc */
     bool is_android;            /* Android: compile MediaCodec, android_camera */
 };
 
@@ -75,6 +76,7 @@ static const struct target targets[] = {
         .build_ffplay = true,
         .build_objc = true,
         .is_darwin = true,
+        .is_macos = true,
     },
     {
         /* Android arm64. Needs target-specific HAVE_* and ARCH_* values in
@@ -110,8 +112,7 @@ static const struct target targets[] = {
         .strip = "xcrun --sdk iphoneos strip",
         .extra_cflags =
             " -arch arm64"
-            " -miphoneos-version-min=13.0"
-            " -fembed-bitcode",
+            " -miphoneos-version-min=13.0",
         .extra_ldflags = " -arch arm64",
         .frameworks =
             " -framework Foundation -framework AudioToolbox"
@@ -128,7 +129,7 @@ static const struct target targets[] = {
 
 /* Source files to skip on platforms where they don't apply. */
 static bool skip_source(const char *src, const struct target *t) {
-    /* VideoToolbox / AudioToolbox / AVFoundation are macOS/iOS only */
+    /* VideoToolbox / AVFoundation are macOS/iOS (Darwin) only */
     if (!t->is_darwin) {
         if (strstr(src, "videotoolbox") ||
             strstr(src, "hwcontext_videotoolbox") ||
@@ -137,6 +138,9 @@ static bool skip_source(const char *src, const struct target *t) {
             strstr(src, "dispatch_semaphore"))
             return true;
     }
+    /* audiotoolbox outdev uses AudioDeviceID which only exists on macOS */
+    if (!t->is_macos && strstr(src, "libavdevice/audiotoolbox.m"))
+        return true;
     /* MediaCodec + android_camera + hwcontext_mediacodec only on Android */
     if (!t->is_android) {
         if (strstr(src, "mediacodec") ||
